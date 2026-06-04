@@ -1,76 +1,158 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-  <title>Operations Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Operations Performance Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
 
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial,sans-serif;
+    }
+
     body{
-      font-family:Arial;
       background:#f5f6fa;
       padding:20px;
+      color:#1e293b;
     }
 
     h1{
       margin-bottom:20px;
+      font-size:32px;
     }
+
+    /*
+    =====================================
+    FILTERS
+    =====================================
+    */
+
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:15px;
+      margin-bottom:25px;
+    }
+
+    .filter-box{
+      background:white;
+      padding:15px;
+      border-radius:14px;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
+    }
+
+    .filter-box label{
+      display:block;
+      margin-bottom:8px;
+      font-size:14px;
+      color:#64748b;
+    }
+
+    select{
+      width:100%;
+      padding:10px;
+      border:1px solid #d1d5db;
+      border-radius:10px;
+      font-size:14px;
+    }
+
+    /*
+    =====================================
+    KPI CARDS
+    =====================================
+    */
 
     .cards{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
       gap:20px;
-      margin-bottom:30px;
+      margin-bottom:25px;
     }
 
     .card{
       background:white;
-      padding:20px;
-      border-radius:15px;
-      box-shadow:0 2px 10px rgba(0,0,0,.08);
+      padding:24px;
+      border-radius:18px;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
     }
 
     .card h3{
-      color:gray;
+      color:#64748b;
+      font-size:14px;
       margin-bottom:10px;
     }
 
     .card h1{
-      font-size:35px;
+      font-size:34px;
     }
+
+    /*
+    =====================================
+    CHARTS
+    =====================================
+    */
 
     .charts{
       display:grid;
-      grid-template-columns:1fr 1fr;
+      grid-template-columns:1fr;
       gap:20px;
-      margin-top:20px;
+      margin-bottom:25px;
     }
 
     .chart-box{
       background:white;
       padding:20px;
-      border-radius:15px;
-      box-shadow:0 2px 10px rgba(0,0,0,.08);
+      border-radius:18px;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
+    }
+
+    /*
+    =====================================
+    TABLE
+    =====================================
+    */
+
+    .table-box{
+      background:white;
+      padding:20px;
+      border-radius:18px;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
+      overflow-x:auto;
     }
 
     table{
       width:100%;
       border-collapse:collapse;
-      background:white;
-      margin-top:30px;
-    }
-
-    th,td{
-      padding:14px;
-      border-bottom:1px solid #eee;
-      text-align:left;
     }
 
     th{
       background:#f1f5f9;
+      padding:14px;
+      text-align:left;
+      font-size:14px;
+    }
+
+    td{
+      padding:14px;
+      border-bottom:1px solid #e5e7eb;
+      font-size:14px;
+    }
+
+    @media(max-width:900px){
+
+      .cards{
+        grid-template-columns:1fr;
+      }
+
     }
 
   </style>
@@ -79,306 +161,568 @@
 
 <body>
 
-<h1>Operations Dashboard</h1>
+<h1>Operations Performance Dashboard</h1>
+
+<!-- FILTERS -->
+
+<div class="filters">
+
+  <div class="filter-box">
+    <label>Filter by Code</label>
+
+    <select id="codeFilter">
+      <option value="All">All</option>
+    </select>
+  </div>
+
+  <div class="filter-box">
+    <label>Filter by Week</label>
+
+    <select id="weekFilter">
+      <option value="All">All</option>
+    </select>
+  </div>
+
+  <div class="filter-box">
+    <label>Filter by Account</label>
+
+    <select id="accountFilter">
+      <option value="All">All</option>
+    </select>
+  </div>
+
+</div>
+
+<!-- KPI CARDS -->
 
 <div class="cards">
 
   <div class="card">
-    <h3>Total Employees</h3>
+    <h3>Total Active Employees</h3>
     <h1 id="employees">0</h1>
   </div>
 
   <div class="card">
-    <h3>Site Employees</h3>
-    <h1 id="onsite">0</h1>
+    <h3>On Site Rate</h3>
+    <h1 id="onsiteRate">0%</h1>
   </div>
 
   <div class="card">
-    <h3>Average Productivity</h3>
-    <h1 id="productivity">0%</h1>
+    <h3>From Home Rate</h3>
+    <h1 id="remoteRate">0%</h1>
   </div>
 
   <div class="card">
-    <h3>Average Utilization</h3>
-    <h1 id="utilization">0%</h1>
+    <h3>Avg Productivity</h3>
+    <h1 id="avgProductivity">0%</h1>
+  </div>
+
+  <div class="card">
+    <h3>Avg Utilization</h3>
+    <h1 id="avgUtilization">0%</h1>
+  </div>
+
+  <div class="card">
+    <h3>Avg Occupancy</h3>
+    <h1 id="avgOccupancy">0%</h1>
   </div>
 
 </div>
+
+<!-- CHART -->
 
 <div class="charts">
 
   <div class="chart-box">
-    <canvas id="statusChart"></canvas>
-  </div>
-
-  <div class="chart-box">
-    <canvas id="accountChart"></canvas>
+    <canvas id="weeklyChart"></canvas>
   </div>
 
 </div>
 
-<table>
+<!-- TABLE -->
 
-  <thead>
+<div class="table-box">
 
-    <tr>
-      <th>Name</th>
-      <th>Account</th>
-      <th>Productivity</th>
-      <th>Status</th>
-    </tr>
+  <table>
 
-  </thead>
+    <thead>
 
-  <tbody id="tableBody"></tbody>
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Account</th>
+        <th>Team Leader</th>
+        <th>Status</th>
+        <th>Week</th>
+        <th>Productivity</th>
+        <th>Utilization</th>
+        <th>Occupancy</th>
+      </tr>
 
-</table>
+    </thead>
+
+    <tbody id="tableBody"></tbody>
+
+  </table>
+
+</div>
 
 <script>
 
 const SHEET_ID =
 "1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0";
 
-/*
-========================================
-GOOGLE SHEET JSON
-========================================
-*/
+const SHEET_NAME =
+"Attendance";
 
 const URL =
-`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Attendance`;
+`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
 
-async function loadDashboard(){
+let fullData = [];
 
-  try{
+let weeklyChart = null;
 
-    const response =
-      await fetch(URL);
+/*
+=====================================
+LOAD DATA
+=====================================
+*/
 
-    const text =
-      await response.text();
+async function loadData(){
 
-    /*
-    ========================================
-    CLEAN GOOGLE RESPONSE
-    ========================================
-    */
+  const response =
+    await fetch(URL);
 
-    const json =
-      JSON.parse(
-        text.substring(47).slice(0,-2)
-      );
+  const text =
+    await response.text();
 
-    const rows =
-      json.table.rows;
-
-    /*
-    ========================================
-    CONVERT TO OBJECTS
-    ========================================
-    */
-
-    const data =
-      rows.map(row => ({
-
-        Code:
-          row.c[0]?.v || "",
-
-        Name:
-          row.c[1]?.v || "",
-
-        Account:
-          row.c[2]?.v || "",
-
-        TeamLeader:
-          row.c[3]?.v || "",
-
-        Date:
-          row.c[4]?.v || "",
-
-        Status:
-          row.c[5]?.v || "",
-
-        Productivity:
-          row.c[6]?.v || "0%",
-
-        Utilization:
-          row.c[7]?.v || "0%",
-
-        Occupancy:
-          row.c[8]?.v || "0%"
-
-      }));
-
-    console.log(data);
-
-    /*
-    ========================================
-    CLEAN %
-    ========================================
-    */
-
-    const clean = (value) => {
-
-      if(!value) return 0;
-
-      return parseFloat(
-        value.toString().replace("%","")
-      ) || 0;
-
-    };
-
-    /*
-    ========================================
-    KPI
-    ========================================
-    */
-
-    document.getElementById("employees").innerText =
-      data.length;
-
-    const onsite =
-      data.filter(
-        x => x.Status.includes("Site")
-      ).length;
-
-    document.getElementById("onsite").innerText =
-      onsite;
-
-    const avgProd =
-      data.reduce(
-        (sum,row)=>sum + clean(row.Productivity),
-        0
-      ) / data.length;
-
-    document.getElementById("productivity").innerText =
-      avgProd.toFixed(1) + "%";
-
-    const avgUtil =
-      data.reduce(
-        (sum,row)=>sum + clean(row.Utilization),
-        0
-      ) / data.length;
-
-    document.getElementById("utilization").innerText =
-      avgUtil.toFixed(1) + "%";
-
-    /*
-    ========================================
-    STATUS CHART
-    ========================================
-    */
-
-    const statusCount = {};
-
-    data.forEach(row => {
-
-      const status =
-        row.Status || "Unknown";
-
-      if(!statusCount[status]){
-
-        statusCount[status] = 0;
-
-      }
-
-      statusCount[status]++;
-
-    });
-
-    new Chart(
-      document.getElementById("statusChart"),
-      {
-        type:"bar",
-
-        data:{
-          labels:Object.keys(statusCount),
-
-          datasets:[{
-            label:"Employees",
-            data:Object.values(statusCount)
-          }]
-        }
-      }
+  const json =
+    JSON.parse(
+      text.substring(47).slice(0,-2)
     );
 
-    /*
-    ========================================
-    ACCOUNT CHART
-    ========================================
-    */
+  const rows =
+    json.table.rows;
 
-    const accountCount = {};
+  fullData =
+    rows.map(row => ({
 
-    data.forEach(row => {
+      Code:
+        row.c[0]?.v || "",
 
-      const account =
-        row.Account || "Unknown";
+      Name:
+        row.c[1]?.v || "",
 
-      if(!accountCount[account]){
+      Account:
+        row.c[2]?.v || "",
 
-        accountCount[account] = 0;
+      TeamLeader:
+        row.c[3]?.v || "",
 
-      }
+      Date:
+        row.c[4]?.v || "",
 
-      accountCount[account]++;
+      Status:
+        row.c[5]?.v || "",
 
-    });
+      Productivity:
+        row.c[6]?.v || "0%",
 
-    new Chart(
-      document.getElementById("accountChart"),
-      {
-        type:"pie",
+      Utilization:
+        row.c[7]?.v || "0%",
 
-        data:{
-          labels:Object.keys(accountCount),
+      Occupancy:
+        row.c[8]?.v || "0%",
 
-          datasets:[{
-            data:Object.values(accountCount)
-          }]
-        }
-      }
-    );
+      Month:
+        row.c[9]?.v || "",
 
-    /*
-    ========================================
-    TABLE
-    ========================================
-    */
+      Week:
+        row.c[11]?.v || ""
 
-    const table =
-      document.getElementById("tableBody");
+    }));
 
-    table.innerHTML = "";
+  populateFilters();
 
-    data.slice(0,20).forEach(row => {
-
-      table.innerHTML += `
-
-        <tr>
-          <td>${row.Name}</td>
-          <td>${row.Account}</td>
-          <td>${row.Productivity}</td>
-          <td>${row.Status}</td>
-        </tr>
-
-      `;
-
-    });
-
-  }
-
-  catch(error){
-
-    console.error(error);
-
-    alert("ERROR CHECK CONSOLE");
-
-  }
+  renderDashboard();
 
 }
 
-loadDashboard();
+/*
+=====================================
+POPULATE FILTERS
+=====================================
+*/
+
+function populateFilters(){
+
+  const codeFilter =
+    document.getElementById("codeFilter");
+
+  const weekFilter =
+    document.getElementById("weekFilter");
+
+  const accountFilter =
+    document.getElementById("accountFilter");
+
+  const uniqueCodes =
+    [...new Set(fullData.map(x=>x.Code))];
+
+  const uniqueWeeks =
+    [...new Set(fullData.map(x=>x.Week))];
+
+  const uniqueAccounts =
+    [...new Set(fullData.map(x=>x.Account))];
+
+  uniqueCodes.forEach(code=>{
+
+    codeFilter.innerHTML +=
+      `<option value="${code}">${code}</option>`;
+
+  });
+
+  uniqueWeeks.forEach(week=>{
+
+    weekFilter.innerHTML +=
+      `<option value="${week}">${week}</option>`;
+
+  });
+
+  uniqueAccounts.forEach(account=>{
+
+    accountFilter.innerHTML +=
+      `<option value="${account}">${account}</option>`;
+
+  });
+
+}
+
+/*
+=====================================
+FILTER DATA
+=====================================
+*/
+
+function getFilteredData(){
+
+  const code =
+    document.getElementById("codeFilter").value;
+
+  const week =
+    document.getElementById("weekFilter").value;
+
+  const account =
+    document.getElementById("accountFilter").value;
+
+  return fullData.filter(row => {
+
+    return (
+      (code === "All" || row.Code == code) &&
+      (week === "All" || row.Week == week) &&
+      (account === "All" || row.Account == account)
+    );
+
+  });
+
+}
+
+/*
+=====================================
+CLEAN %
+=====================================
+*/
+
+function clean(value){
+
+  if(!value) return 0;
+
+  return parseFloat(
+    value.toString().replace("%","")
+  ) || 0;
+
+}
+
+/*
+=====================================
+RENDER DASHBOARD
+=====================================
+*/
+
+function renderDashboard(){
+
+  const data =
+    getFilteredData();
+
+  /*
+  =====================================
+  UNIQUE EMPLOYEES
+  =====================================
+  */
+
+  const uniqueEmployees =
+    [...new Set(data.map(x=>x.Code))];
+
+  const totalEmployees =
+    uniqueEmployees.length;
+
+  /*
+  =====================================
+  SITE RATE
+  =====================================
+  */
+
+  const onsiteEmployees =
+    [...new Set(
+
+      data
+        .filter(x =>
+          x.Status.toLowerCase().includes("site")
+        )
+        .map(x=>x.Code)
+
+    )];
+
+  const onsiteRate =
+    totalEmployees > 0
+    ?
+    (onsiteEmployees.length / totalEmployees) * 100
+    :
+    0;
+
+  /*
+  =====================================
+  REMOTE RATE
+  =====================================
+  */
+
+  const remoteEmployees =
+    [...new Set(
+
+      data
+        .filter(x =>
+          x.Status.toLowerCase().includes("remote")
+        )
+        .map(x=>x.Code)
+
+    )];
+
+  const remoteRate =
+    totalEmployees > 0
+    ?
+    (remoteEmployees.length / totalEmployees) * 100
+    :
+    0;
+
+  /*
+  =====================================
+  AVG
+  =====================================
+  */
+
+  const avgProductivity =
+    data.reduce(
+      (sum,row)=>sum + clean(row.Productivity),
+      0
+    ) / (data.length || 1);
+
+  const avgUtilization =
+    data.reduce(
+      (sum,row)=>sum + clean(row.Utilization),
+      0
+    ) / (data.length || 1);
+
+  const avgOccupancy =
+    data.reduce(
+      (sum,row)=>sum + clean(row.Occupancy),
+      0
+    ) / (data.length || 1);
+
+  /*
+  =====================================
+  UPDATE KPI
+  =====================================
+  */
+
+  document.getElementById("employees").innerText =
+    totalEmployees;
+
+  document.getElementById("onsiteRate").innerText =
+    onsiteRate.toFixed(1) + "%";
+
+  document.getElementById("remoteRate").innerText =
+    remoteRate.toFixed(1) + "%";
+
+  document.getElementById("avgProductivity").innerText =
+    avgProductivity.toFixed(1) + "%";
+
+  document.getElementById("avgUtilization").innerText =
+    avgUtilization.toFixed(1) + "%";
+
+  document.getElementById("avgOccupancy").innerText =
+    avgOccupancy.toFixed(1) + "%";
+
+  /*
+  =====================================
+  WEEKLY CHART
+  =====================================
+  */
+
+  const weeklyData = {};
+
+  data.forEach(row => {
+
+    const week =
+      row.Week || "Unknown";
+
+    if(!weeklyData[week]){
+
+      weeklyData[week] = {
+        site:new Set(),
+        remote:new Set()
+      };
+
+    }
+
+    if(
+      row.Status.toLowerCase().includes("site")
+    ){
+
+      weeklyData[week]
+        .site
+        .add(row.Code);
+
+    }
+
+    if(
+      row.Status.toLowerCase().includes("remote")
+    ){
+
+      weeklyData[week]
+        .remote
+        .add(row.Code);
+
+    }
+
+  });
+
+  const labels =
+    Object.keys(weeklyData);
+
+  const siteCounts =
+    labels.map(
+      week => weeklyData[week].site.size
+    );
+
+  const remoteCounts =
+    labels.map(
+      week => weeklyData[week].remote.size
+    );
+
+  if(weeklyChart){
+
+    weeklyChart.destroy();
+
+  }
+
+  weeklyChart =
+    new Chart(
+      document.getElementById("weeklyChart"),
+      {
+
+        type:"bar",
+
+        data:{
+
+          labels:labels,
+
+          datasets:[
+
+            {
+              label:"Site",
+              data:siteCounts
+            },
+
+            {
+              label:"Remote",
+              data:remoteCounts
+            }
+
+          ]
+
+        }
+
+      }
+    );
+
+  /*
+  =====================================
+  TABLE
+  =====================================
+  */
+
+  const table =
+    document.getElementById("tableBody");
+
+  table.innerHTML = "";
+
+  data.forEach(row => {
+
+    table.innerHTML += `
+
+      <tr>
+
+        <td>${row.Code}</td>
+        <td>${row.Name}</td>
+        <td>${row.Account}</td>
+        <td>${row.TeamLeader}</td>
+        <td>${row.Status}</td>
+        <td>${row.Week}</td>
+        <td>${row.Productivity}</td>
+        <td>${row.Utilization}</td>
+        <td>${row.Occupancy}</td>
+
+      </tr>
+
+    `;
+
+  });
+
+}
+
+/*
+=====================================
+FILTER EVENTS
+=====================================
+*/
+
+document
+  .getElementById("codeFilter")
+  .addEventListener(
+    "change",
+    renderDashboard
+  );
+
+document
+  .getElementById("weekFilter")
+  .addEventListener(
+    "change",
+    renderDashboard
+  );
+
+document
+  .getElementById("accountFilter")
+  .addEventListener(
+    "change",
+    renderDashboard
+  );
+
+/*
+=====================================
+START
+=====================================
+*/
+
+loadData();
 
 </script>
 
