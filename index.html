@@ -289,8 +289,13 @@ const remoteRows = activeRows.filter(x => x.Status === "active - remote").length
     const avg = key => metricRows.length
       ? metricRows.reduce((s, r) => s + (r[key] || 0), 0) / metricRows.length : 0;
 
-    const excludedStatuses = ["active - site", "active - remote", "off"];
-const absentRows = data.filter(x => !excludedStatuses.includes(x.Status));
+    const absentStatuses = [
+  "dropped", "ncns", "public holiday", "sick", "maternity",
+  "casual", "awol", "resigned", "annual", "upl",
+  "forced upl", "forced annual", "terminated", "marriage leave"
+];
+
+const absentRows = data.filter(x => absentStatuses.includes(x.Status));
 const absentRate = data.length ? (absentRows.length / data.length) * 100 : 0;
     document.getElementById("absentRate").innerText = absentRate.toFixed(1) + "%";
     document.getElementById("onsiteRate").innerText      = onsiteRate.toFixed(1) + "%";
