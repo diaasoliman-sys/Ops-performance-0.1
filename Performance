@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Operations Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: #f3f4f7;
+      padding: 20px;
+      color: #1e293b;
+    }
+
+    .header {
+      margin-bottom: 25px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .header p {
+      color: #64748b;
+      margin-top: 5px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    }
+
+    .card h3 {
+      color: #64748b;
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    .card h1 {
+      font-size: 34px;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .chart-box {
+      background: white;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    }
+
+    .chart-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      padding-bottom: 14px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    td {
+      padding: 12px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .onsite {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+
+    .remote {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .hybrid {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .agent-card {
+      background: white;
+      padding: 20px;
+      border-radius: 18px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    }
+
+    .agent-card h3 {
+      margin-bottom: 15px;
+    }
+
+    .agent-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    @media(max-width: 900px){
+      .grid,
+      .bottom-grid{
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>Operations Dashboard</h1>
+    <p>Live dashboard connected to Google Sheets</p>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="cards">
+
+    <div class="card">
+      <h3>Total Employees</h3>
+      <h1 id="employees">0</h1>
+    </div>
+
+    <div class="card">
+      <h3>On-site Employees</h3>
+      <h1 id="onsite">0</h1>
+    </div>
+
+    <div class="card">
+      <h3>Remote Employees</h3>
+      <h1 id="remote">0</h1>
+    </div>
+
+    <div class="card">
+      <h3>Hybrid Employees</h3>
+      <h1 id="hybrid">0</h1>
+    </div>
+
+    <div class="card">
+      <h3>Average Productivity</h3>
+      <h1 id="productivity">0%</h1>
+    </div>
+
+  </div>
+
+  <!-- Charts -->
+  <div class="grid">
+
+    <div class="chart-box">
+      <div class="chart-title">Site vs Remote</div>
+      <canvas id="siteChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+      <div class="chart-title">Work Mode Split</div>
+      <canvas id="modeChart"></canvas>
+    </div>
+
+  </div>
+
+  <!-- Bottom -->
+  <div class="bottom-grid">
+
+    <div class="chart-box">
+      <div class="chart-title">Top Accounts</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Employees</th>
+            <th>Mode</th>
+          </tr>
+        </thead>
+
+        <tbody id="accountTable"></tbody>
+      </table>
+    </div>
+
+    <div class="chart-box">
+      <div class="chart-title">Productivity by Account</div>
+      <canvas id="accountChart"></canvas>
+    </div>
+
+  </div>
+
+  <!-- Agents -->
+  <div class="agents-grid">
+
+    <div class="agent-card">
+      <h3>Top Performing Agents</h3>
+
+      <div id="topAgents"></div>
+    </div>
+
+    <div class="agent-card">
+      <h3>Lowest Productivity</h3>
+
+      <div id="lowAgents"></div>
+    </div>
+
+  </div>
+
+  <script>
+
+    /*
+    ======================================================
+    CHANGE THIS
+    ======================================================
+    */
+
+    const SHEET_NAME = "Sheet1";
+
+    const SHEET_URL =
+      `https://opensheet.elk.sh/1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0/${SHEET_NAME}`;
+
+    /*
+    ======================================================
+    FETCH DATA
+    ======================================================
+    */
+
+    async function loadDashboard() {
+
+      const response = await fetch(SHEET_URL);
+
+      const data = await response.json();
+
+      console.log(data);
+
+      /*
+      ======================================================
+      COLUMN NAMES
+      ======================================================
+
+      CHANGE THESE TO MATCH YOUR SHEET
+
+      Example:
+      row["Employee"]
+      row["Mode"]
+      row["Productivity"]
+
+      */
+
+      const employees = data.length;
+
+      const onsite = data.filter(
+        x => x.Mode?.toLowerCase() === "on-site"
+      ).length;
+
+      const remote = data.filter(
+        x => x.Mode?.toLowerCase() === "remote"
+      ).length;
+
+      const hybrid = data.filter(
+        x => x.Mode?.toLowerCase() === "hybrid"
+      ).length;
+
+      const productivityValues = data
+        .map(x => Number(x.Productivity))
+        .filter(x => !isNaN(x));
+
+      const avgProductivity =
+        productivityValues.reduce((a,b)=>a+b,0) /
+        productivityValues.length || 0;
+
+      /*
+      ======================================================
+      KPI
+      ======================================================
+      */
+
+      document.getElementById("employees").innerText = employees;
+
+      document.getElementById("onsite").innerText = onsite;
+
+      document.getElementById("remote").innerText = remote;
+
+      document.getElementById("hybrid").innerText = hybrid;
+
+      document.getElementById("productivity").innerText =
+        avgProductivity.toFixed(1) + "%";
+
+      /*
+      ======================================================
+      MODE CHART
+      ======================================================
+      */
+
+      new Chart(
+        document.getElementById("modeChart"),
+        {
+          type: "doughnut",
+          data: {
+            labels: ["On-site","Remote","Hybrid"],
+            datasets: [{
+              data: [onsite, remote, hybrid]
+            }]
+          }
+        }
+      );
+
+      /*
+      ======================================================
+      ACCOUNT ANALYSIS
+      ======================================================
+      */
+
+      const accounts = {};
+
+      data.forEach(row => {
+
+        const account = row.Account || "Unknown";
+
+        if(!accounts[account]){
+
+          accounts[account] = {
+            count: 0,
+            productivity: []
+          };
+        }
+
+        accounts[account].count++;
+
+        const prod = Number(row.Productivity);
+
+        if(!isNaN(prod)){
+          accounts[account].productivity.push(prod);
+        }
+
+      });
+
+      const sortedAccounts =
+        Object.entries(accounts)
+        .sort((a,b)=>b[1].count - a[1].count)
+        .slice(0,8);
+
+      /*
+      ======================================================
+      TABLE
+      ======================================================
+      */
+
+      const table = document.getElementById("accountTable");
+
+      sortedAccounts.forEach(([name,details])=>{
+
+        const avg =
+          details.productivity.reduce((a,b)=>a+b,0) /
+          details.productivity.length || 0;
+
+        let mode = "Hybrid";
+
+        if(avg >= 85){
+          mode = "On-site";
+        }
+        else if(avg <= 60){
+          mode = "Remote";
+        }
+
+        table.innerHTML += `
+          <tr>
+            <td>${name}</td>
+            <td>${details.count}</td>
+            <td>
+              <span class="badge ${mode.toLowerCase().replace('-','')}">
+                ${mode}
+              </span>
+            </td>
+          </tr>
+        `;
+
+      });
+
+      /*
+      ======================================================
+      ACCOUNT CHART
+      ======================================================
+      */
+
+      new Chart(
+        document.getElementById("accountChart"),
+        {
+          type: "bar",
+          data: {
+            labels: sortedAccounts.map(x=>x[0]),
+            datasets: [{
+              label: "Employees",
+              data: sortedAccounts.map(x=>x[1].count)
+            }]
+          }
+        }
+      );
+
+      /*
+      ======================================================
+      SITE CHART
+      ======================================================
+      */
+
+      const weeklyLabels = ["Wk1","Wk2","Wk3","Wk4","Wk5"];
+
+      new Chart(
+        document.getElementById("siteChart"),
+        {
+          type: "bar",
+          data: {
+            labels: weeklyLabels,
+            datasets: [
+              {
+                label: "On-site",
+                data: [120,140,160,180,150]
+              },
+              {
+                label: "Remote",
+                data: [100,130,110,140,120]
+              }
+            ]
+          }
+        }
+      );
+
+      /*
+      ======================================================
+      AGENT ANALYSIS
+      ======================================================
+      */
+
+      const agents =
+        data
+        .filter(x => x.Agent && x.Productivity)
+        .sort((a,b)=>
+          Number(b.Productivity) -
+          Number(a.Productivity)
+        );
+
+      const topAgents =
+        agents.slice(0,5);
+
+      const lowAgents =
+        agents.slice(-5);
+
+      topAgents.forEach(agent=>{
+
+        document.getElementById("topAgents").innerHTML += `
+          <div class="agent-row">
+            <span>${agent.Agent}</span>
+            <strong>${agent.Productivity}%</strong>
+          </div>
+        `;
+      });
+
+      lowAgents.forEach(agent=>{
+
+        document.getElementById("lowAgents").innerHTML += `
+          <div class="agent-row">
+            <span>${agent.Agent}</span>
+            <strong>${agent.Productivity}%</strong>
+          </div>
+        `;
+      });
+
+    }
+
+    loadDashboard();
+
+    /*
+    ======================================================
+    AUTO REFRESH
+    ======================================================
+    */
+
+    setInterval(loadDashboard, 300000);
+
+  </script>
+
+</body>
+</html>
