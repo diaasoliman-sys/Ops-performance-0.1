@@ -278,12 +278,19 @@
     let fullData    = [];
     let weeklyChart = null;
 
-    async function loadData() {
-      try {
-        const response = await fetch(URL);
-        const text     = await response.text();
-        const json     = JSON.parse(text.substring(47).slice(0, -2));
-        const rows     = json.table.rows || [];
+   async function loadData() {
+  try {
+    const response = await fetch(URL);
+    const text = await response.text();
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const rows = json.table.rows || [];
+
+    // DEBUG — open Console (F12) and check this output
+    console.log("Total rows found:", rows.length);
+    console.log("First row raw:", JSON.stringify(rows[0]));
+    console.log("Second row raw:", JSON.stringify(rows[1]));
+
+    // ... rest of the function
 
         fullData = rows.map(row => {
           const c = row.c || [];
