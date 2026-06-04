@@ -1,112 +1,136 @@
-<script>
-
 const SHEET_ID = "1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0";
 const SHEET_NAME = "Attendance";
 
 const URL =
-`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
 
 let fullData = [];
 let weeklyChart = null;
 
 /* =========================
-LOAD DATA
+   LOAD DATA
 ========================= */
 
 async function loadData() {
+  try {
+    const response = await fetch(URL);
+    const text = await response.text();
 
-  const response = await fetch(URL);
-  const text = await response.text();
+    // The gviz response is wrapped in a callback — strip it
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const rows = json.table.rows || [];
 
-  const json = JSON.parse(text.substring(47).slice(0, -2));
-  const rows = json.table.rows || [];
+    fullData = rows.map(row => {
+      const c = row.c || [];
 
-  fullData = rows.map(row => {
-    const c = row.c || [];
+      // Dates from gviz come as "Date(2026,2,21)" — convert to readable string
+      let dateVal = "";
+      if (c[4]?.v) {
+        const raw = c[4].v;
+        if (typeof raw === "string" && raw.startsWith("Date(")) {
+          const parts = raw.replace("Date(", "").replace(")", "").split(",");
+          const d = new Date(+parts[0], +parts[1], +parts[2]);
+          dateVal = d.toLocaleDateString("en-GB", {
+            day: "numeric", month: "long", year: "numeric"
+          });
+        } else {
+          dateVal = raw;
+        }
+      }
 
-    return {
-      Code: c[0]?.v || "",
-      Name: c[1]?.v || "",
-      Account: c[2]?.v || "",
-      TeamLeader: c[3]?.v || "",
-      Date: c[4]?.v || "",
-      Status: (c[5]?.v || "").toString().toLowerCase(),
-      Productivity: parseFloat((c[6]?.v || 0).toString().replace("%", "")) || 0,
-      Utilization: parseFloat((c[7]?.v || 0).toString().replace("%", "")) || 0,
-      Occupancy: parseFloat((c[8]?.v || 0).toString().replace("%", "")) || 0,
-      Month: c[9]?.v || "",
-      WeekMonth: c[10]?.v || "",
-      Week: c[11]?.v || ""
-    };
-  });
+      // FIX: gviz returns percentage columns as decimals (e.g. 0.1151 for 11.51%)
+      // Multiply by 100 to get the correct percentage value
+      const parsePercent = val => {
+        const num = parseFloat((val || 0).toString().replace("%", ""));
+        // If the value is already > 1, it's already a percentage (shouldn't happen from gviz, but safe guard)
+        return isNaN(num) ? 0 : (num <= 1 ? num * 100 : num);
+      };
 
-  populateFilters();
-  renderDashboard();
+      return {
+        Code:         (c[0]?.v ?? "").toString(),
+        Name:         c[1]?.v || "",
+        Account:      c[2]?.v || "",
+        TeamLeader:   c[3]?.v || "",
+        Date:         dateVal,
+        Status:       (c[5]?.v || "").toString().trim().toLowerCase(),
+        Productivity: parsePercent(c[6]?.v),
+        Utilization:  parsePercent(c[7]?.v),
+        Occupancy:    parsePercent(c[8]?.v),
+        Month:        c[9]?.v  || "",
+        WeekMonth:    c[10]?.v || "",
+        Week:         c[11]?.v || ""
+      };
+    });
+
+    populateFilters();
+    renderDashboard();
+
+  } catch (err) {
+    console.error("Failed to load data:", err);
+    alert("Could not load data. Make sure the Google Sheet is published to the web (File → Share → Publish to web).");
+  }
 }
 
 /* =========================
-FILTERS
+   FILTERS
 ========================= */
 
 function populateFilters() {
-
-  const codeFilter = document.getElementById("codeFilter");
-  const weekFilter = document.getElementById("weekFilter");
+  const codeFilter    = document.getElementById("codeFilter");
+  const weekFilter    = document.getElementById("weekFilter");
   const accountFilter = document.getElementById("accountFilter");
 
-  codeFilter.innerHTML = `<option value="All">All</option>`;
-  weekFilter.innerHTML = `<option value="All">All</option>`;
+  codeFilter.innerHTML    = `<option value="All">All</option>`;
+  weekFilter.innerHTML    = `<option value="All">All</option>`;
   accountFilter.innerHTML = `<option value="All">All</option>`;
 
-  const uniqueCodes = [...new Set(fullData.map(x => x.Code))].filter(Boolean);
-  const uniqueWeeks = [...new Set(fullData.map(x => x.Week))].filter(Boolean);
-  const uniqueAccounts = [...new Set(fullData.map(x => x.Account))].filter(Boolean);
+  const uniqueCodes    = [...new Set(fullData.map(x => x.Code))].filter(Boolean).sort();
+  const uniqueWeeks    = [...new Set(fullData.map(x => x.Week))].filter(Boolean).sort();
+  const uniqueAccounts = [...new Set(fullData.map(x => x.Account))].filter(Boolean).sort();
 
   uniqueCodes.forEach(c =>
     codeFilter.innerHTML += `<option value="${c}">${c}</option>`
   );
-
   uniqueWeeks.forEach(w =>
     weekFilter.innerHTML += `<option value="${w}">${w}</option>`
   );
-
   uniqueAccounts.forEach(a =>
     accountFilter.innerHTML += `<option value="${a}">${a}</option>`
   );
 }
 
 /* =========================
-FILTER DATA
+   FILTER DATA
 ========================= */
 
 function getFilteredData() {
-
-  const code = document.getElementById("codeFilter").value;
-  const week = document.getElementById("weekFilter").value;
+  const code    = document.getElementById("codeFilter").value;
+  const week    = document.getElementById("weekFilter").value;
   const account = document.getElementById("accountFilter").value;
 
   return fullData.filter(row =>
-    (code === "All" || row.Code == code) &&
-    (week === "All" || row.Week == week) &&
-    (account === "All" || row.Account == account)
+    (code    === "All" || row.Code    === code) &&
+    (week    === "All" || row.Week    === week) &&
+    (account === "All" || row.Account === account)
   );
 }
 
 /* =========================
-RENDER DASHBOARD
+   RENDER DASHBOARD
 ========================= */
 
 function renderDashboard() {
-
   const data = getFilteredData();
 
+  // Count unique employees
   const uniqueEmployees = new Set(data.map(x => x.Code));
-  const totalEmployees = uniqueEmployees.size;
+  const totalEmployees  = uniqueEmployees.size;
 
+  // FIX: An employee is "on-site" if ANY of their records include "site"
+  // Use the most recent / any record — here we count unique codes with at least one site/remote entry
   const onsiteEmployees = new Set(
     data.filter(x => x.Status.includes("site")).map(x => x.Code)
   );
-
   const remoteEmployees = new Set(
     data.filter(x => x.Status.includes("remote")).map(x => x.Code)
   );
@@ -114,108 +138,120 @@ function renderDashboard() {
   const onsiteRate = totalEmployees ? (onsiteEmployees.size / totalEmployees) * 100 : 0;
   const remoteRate = totalEmployees ? (remoteEmployees.size / totalEmployees) * 100 : 0;
 
-  const avgProductivity = data.length
-    ? data.reduce((s, r) => s + r.Productivity, 0) / data.length
+  // Averages — only include rows with valid numeric data
+  const validRows = data.filter(x => !isNaN(x.Productivity));
+
+  const avgProductivity = validRows.length
+    ? validRows.reduce((s, r) => s + r.Productivity, 0) / validRows.length
+    : 0;
+  const avgUtilization = validRows.length
+    ? validRows.reduce((s, r) => s + r.Utilization, 0) / validRows.length
+    : 0;
+  const avgOccupancy = validRows.length
+    ? validRows.reduce((s, r) => s + r.Occupancy, 0) / validRows.length
     : 0;
 
-  const avgUtilization = data.length
-    ? data.reduce((s, r) => s + r.Utilization, 0) / data.length
-    : 0;
-
-  const avgOccupancy = data.length
-    ? data.reduce((s, r) => s + r.Occupancy, 0) / data.length
-    : 0;
-
-  /* =========================
-  UPDATE KPI
-  ========================= */
-
-  document.getElementById("employees").innerText = totalEmployees;
-  document.getElementById("onsiteRate").innerText = onsiteRate.toFixed(1) + "%";
-  document.getElementById("remoteRate").innerText = remoteRate.toFixed(1) + "%";
+  /* ---- UPDATE KPIs ---- */
+  document.getElementById("employees").innerText      = totalEmployees;
+  document.getElementById("onsiteRate").innerText     = onsiteRate.toFixed(1) + "%";
+  document.getElementById("remoteRate").innerText     = remoteRate.toFixed(1) + "%";
   document.getElementById("avgProductivity").innerText = avgProductivity.toFixed(1) + "%";
-  document.getElementById("avgUtilization").innerText = avgUtilization.toFixed(1) + "%";
-  document.getElementById("avgOccupancy").innerText = avgOccupancy.toFixed(1) + "%";
+  document.getElementById("avgUtilization").innerText  = avgUtilization.toFixed(1) + "%";
+  document.getElementById("avgOccupancy").innerText    = avgOccupancy.toFixed(1) + "%";
 
-  /* =========================
-  WEEKLY CHART
-  ========================= */
-
+  /* ---- WEEKLY CHART ---- */
   const weeklyData = {};
 
   data.forEach(row => {
-
     const week = row.Week || "Unknown";
-
     if (!weeklyData[week]) {
-      weeklyData[week] = {
-        site: new Set(),
-        remote: new Set()
-      };
+      weeklyData[week] = { site: new Set(), remote: new Set() };
     }
-
-    if (row.Status.includes("site")) {
-      weeklyData[week].site.add(row.Code);
-    }
-
-    if (row.Status.includes("remote")) {
-      weeklyData[week].remote.add(row.Code);
-    }
+    if (row.Status.includes("site"))   weeklyData[week].site.add(row.Code);
+    if (row.Status.includes("remote")) weeklyData[week].remote.add(row.Code);
   });
 
-  const labels = Object.keys(weeklyData);
-
-  const siteCounts = labels.map(w => weeklyData[w].site.size);
+  // Sort weeks naturally
+  const labels      = Object.keys(weeklyData).sort();
+  const siteCounts  = labels.map(w => weeklyData[w].site.size);
   const remoteCounts = labels.map(w => weeklyData[w].remote.size);
 
   if (weeklyChart) weeklyChart.destroy();
 
-  weeklyChart = new Chart(
-    document.getElementById("weeklyChart"),
-    {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          {
-            label: "Site",
-            data: siteCounts
-          },
-          {
-            label: "Remote",
-            data: remoteCounts
-          }
-        ]
+  weeklyChart = new Chart(document.getElementById("weeklyChart"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Site",
+          data: siteCounts,
+          backgroundColor: "rgba(59, 130, 246, 0.8)",   // blue
+          borderColor: "rgba(59, 130, 246, 1)",
+          borderWidth: 1,
+          borderRadius: 4
+        },
+        {
+          label: "Remote",
+          data: remoteCounts,
+          backgroundColor: "rgba(16, 185, 129, 0.8)",   // green
+          borderColor: "rgba(16, 185, 129, 1)",
+          borderWidth: 1,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "top" },
+        tooltip: { mode: "index", intersect: false }
+      },
+      scales: {
+        x: { stacked: false },
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
       }
     }
-  );
+  });
 
-  /* =========================
-  TABLE
-  ========================= */
-
+  /* ---- TABLE ---- */
   const table = document.getElementById("tableBody");
   table.innerHTML = "";
 
+  if (data.length === 0) {
+    table.innerHTML = `<tr><td colspan="9" style="text-align:center;">No data found for the selected filters.</td></tr>`;
+    return;
+  }
+
   data.forEach(row => {
+    // Colour-code the status badge
+    const statusClass = row.Status.includes("site")
+      ? "status-site"
+      : row.Status.includes("remote")
+        ? "status-remote"
+        : "status-other";
+
     table.innerHTML += `
       <tr>
         <td>${row.Code}</td>
         <td>${row.Name}</td>
         <td>${row.Account}</td>
         <td>${row.TeamLeader}</td>
-        <td>${row.Status}</td>
+        <td><span class="status-badge ${statusClass}">${row.Status}</span></td>
         <td>${row.Week}</td>
-        <td>${row.Productivity}%</td>
-        <td>${row.Utilization}%</td>
-        <td>${row.Occupancy}%</td>
+        <td>${row.Productivity.toFixed(2)}%</td>
+        <td>${row.Utilization.toFixed(2)}%</td>
+        <td>${row.Occupancy.toFixed(2)}%</td>
       </tr>
     `;
   });
 }
 
 /* =========================
-EVENTS
+   EVENTS
 ========================= */
 
 document.getElementById("codeFilter").addEventListener("change", renderDashboard);
@@ -223,9 +259,7 @@ document.getElementById("weekFilter").addEventListener("change", renderDashboard
 document.getElementById("accountFilter").addEventListener("change", renderDashboard);
 
 /* =========================
-START
+   START
 ========================= */
 
 loadData();
-
-</script>
