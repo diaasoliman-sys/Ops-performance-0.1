@@ -29,7 +29,6 @@
       padding: 24px 32px;
     }
 
-    /* FILTERS */
     .filters {
       display: flex;
       gap: 16px;
@@ -64,7 +63,6 @@
       box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
     }
 
-    /* KPI CARDS */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -101,7 +99,6 @@
       color: #1e293b;
     }
 
-    /* CHART */
     .chart-card {
       background: white;
       border-radius: 12px;
@@ -117,11 +114,8 @@
       margin-bottom: 16px;
     }
 
-    canvas {
-      max-height: 300px;
-    }
+    canvas { max-height: 300px; }
 
-    /* TABLE */
     .table-card {
       background: white;
       border-radius: 12px;
@@ -167,7 +161,6 @@
       color: #334155;
     }
 
-    /* STATUS BADGES */
     .status-badge {
       display: inline-block;
       padding: 3px 10px;
@@ -181,7 +174,6 @@
     .status-remote { background: #d1fae5; color: #065f46; }
     .status-other  { background: #fef3c7; color: #92400e; }
 
-    /* LOADING */
     #loading {
       text-align: center;
       padding: 60px;
@@ -196,7 +188,6 @@
 
   <div class="container">
 
-    <!-- FILTERS -->
     <div class="filters">
       <div>
         <label for="accountFilter">Account</label>
@@ -212,7 +203,6 @@
       </div>
     </div>
 
-    <!-- KPI CARDS -->
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-label">Employees</div>
@@ -240,13 +230,11 @@
       </div>
     </div>
 
-    <!-- CHART -->
     <div class="chart-card">
       <h2>Weekly Attendance — Site vs Remote</h2>
       <canvas id="weeklyChart"></canvas>
     </div>
 
-    <!-- TABLE -->
     <div class="table-card">
       <h2>Employee Records</h2>
       <div id="loading">Loading data...</div>
@@ -278,41 +266,49 @@
     let fullData    = [];
     let weeklyChart = null;
 
-   async function loadData() {
-  try {
-    const response = await fetch(URL);
-    const text = await response.text();
-    const json = JSON.parse(text.substring(47).slice(0, -2));
-    const rows = json.table.rows || [];
+    /* =========================
+       LOAD DATA
+    ========================= */
+    async function loadData() {
+      try {
+        const response = await fetch(URL);
+        const text     = await response.text();
 
-    // DEBUG — open Console (F12) and check this output
-    console.log("Total rows found:", rows.length);
-    console.log("First row raw:", JSON.stringify(rows[0]));
-    console.log("Second row raw:", JSON.stringify(rows[1]));
+        // Safely extract JSON — avoids issues with varying wrapper lengths
+        const start = text.indexOf('{');
+        const end   = text.lastIndexOf('}');
+        const json  = JSON.parse(text.substring(start, end + 1));
+        const rows  = json.table.rows || [];
 
-    // ... rest of the function
+        const parsePercent = val => {
+          if (val == null) return null;
+          const num = parseFloat(val.toString().replace("%", ""));
+          if (isNaN(num)) return null;
+          // gviz returns decimals (0.1151 = 11.51%) — multiply by 100
+          return num <= 1 ? num * 100 : num;
+        };
 
         fullData = rows.map(row => {
           const c = row.c || [];
 
-          // Dates from gviz come as "Date(2026,2,21)"
+          // Dates from gviz come as "Date(2026,2,21)" — convert to readable string
           let dateVal = "";
           if (c[4]?.v) {
             const raw = c[4].v;
             if (typeof raw === "string" && raw.startsWith("Date(")) {
               const parts = raw.replace("Date(", "").replace(")", "").split(",");
               const d = new Date(+parts[0], +parts[1], +parts[2]);
-              dateVal = d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+              dateVal = d.toLocaleDateString("en-GB", {
+                day: "numeric", month: "long", year: "numeric"
+              });
             } else {
               dateVal = raw;
             }
           }
 
-          // gviz returns percentages as decimals (0.1151 = 11.51%) — multiply by 100
-          const parsePercent = val => {
-            const num = parseFloat((val || 0).toString().replace("%", ""));
-            return isNaN(num) ? 0 : (num <= 1 ? num * 100 : num);
-          };
+          const rawProd = c[6]?.v ?? null;
+          const rawUtil = c[7]?.v ?? null;
+          const rawOcc  = c[8]?.v ?? null;
 
           return {
             Code:         (c[0]?.v ?? "").toString(),
@@ -321,17 +317,19 @@
             TeamLeader:   c[3]?.v || "",
             Date:         dateVal,
             Status:       (c[5]?.v || "").toString().trim().toLowerCase(),
-            Productivity: parsePercent(c[6]?.v),
-            Utilization:  parsePercent(c[7]?.v),
-            Occupancy:    parsePercent(c[8]?.v),
+            Productivity: parsePercent(rawProd),
+            Utilization:  parsePercent(rawUtil),
+            Occupancy:    parsePercent(rawOcc),
+            // Track whether metrics exist for this agent
+            hasMetrics:   rawProd != null,
             Month:        c[9]?.v  || "",
             WeekMonth:    c[10]?.v || "",
             Week:         c[11]?.v || ""
           };
         });
 
-        document.getElementById("loading").style.display    = "none";
-        document.getElementById("dataTable").style.display  = "table";
+        document.getElementById("loading").style.display   = "none";
+        document.getElementById("dataTable").style.display = "table";
 
         populateFilters();
         renderDashboard();
@@ -339,10 +337,13 @@
       } catch (err) {
         console.error("Failed to load data:", err);
         document.getElementById("loading").innerText =
-          "⚠️ Could not load data. Make sure the Google Sheet is published to the web (File → Share → Publish to web).";
+          "⚠️ Could not load data. Check the console for details.";
       }
     }
 
+    /* =========================
+       FILTERS
+    ========================= */
     function populateFilters() {
       const codeFilter    = document.getElementById("codeFilter");
       const weekFilter    = document.getElementById("weekFilter");
@@ -360,6 +361,9 @@
         .forEach(a => accountFilter.innerHTML += `<option value="${a}">${a}</option>`);
     }
 
+    /* =========================
+       FILTER DATA
+    ========================= */
     function getFilteredData() {
       const code    = document.getElementById("codeFilter").value;
       const week    = document.getElementById("weekFilter").value;
@@ -372,9 +376,13 @@
       );
     }
 
+    /* =========================
+       RENDER DASHBOARD
+    ========================= */
     function renderDashboard() {
       const data = getFilteredData();
 
+      // Unique employees
       const uniqueEmployees = new Set(data.map(x => x.Code));
       const totalEmployees  = uniqueEmployees.size;
 
@@ -384,9 +392,11 @@
       const onsiteRate = totalEmployees ? (onsiteEmployees.size / totalEmployees) * 100 : 0;
       const remoteRate = totalEmployees ? (remoteEmployees.size / totalEmployees) * 100 : 0;
 
-      const validRows = data.filter(x => !isNaN(x.Productivity));
-      const avg = key => validRows.length
-        ? validRows.reduce((s, r) => s + r[key], 0) / validRows.length : 0;
+      // Only average rows that actually have metrics (exclude nulls)
+      const metricRows = data.filter(x => x.hasMetrics);
+      const avg = key => metricRows.length
+        ? metricRows.reduce((s, r) => s + (r[key] || 0), 0) / metricRows.length
+        : 0;
 
       document.getElementById("employees").innerText       = totalEmployees;
       document.getElementById("onsiteRate").innerText      = onsiteRate.toFixed(1) + "%";
@@ -414,14 +424,34 @@
         data: {
           labels,
           datasets: [
-            { label: "Site",   data: siteCounts,   backgroundColor: "rgba(59,130,246,0.8)", borderColor: "rgba(59,130,246,1)",   borderWidth: 1, borderRadius: 4 },
-            { label: "Remote", data: remoteCounts, backgroundColor: "rgba(16,185,129,0.8)", borderColor: "rgba(16,185,129,1)",   borderWidth: 1, borderRadius: 4 }
+            {
+              label: "Site",
+              data: siteCounts,
+              backgroundColor: "rgba(59,130,246,0.8)",
+              borderColor: "rgba(59,130,246,1)",
+              borderWidth: 1,
+              borderRadius: 4
+            },
+            {
+              label: "Remote",
+              data: remoteCounts,
+              backgroundColor: "rgba(16,185,129,0.8)",
+              borderColor: "rgba(16,185,129,1)",
+              borderWidth: 1,
+              borderRadius: 4
+            }
           ]
         },
         options: {
           responsive: true,
-          plugins: { legend: { position: "top" }, tooltip: { mode: "index", intersect: false } },
-          scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          plugins: {
+            legend: { position: "top" },
+            tooltip: { mode: "index", intersect: false }
+          },
+          scales: {
+            x: { stacked: false },
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
         }
       });
 
@@ -434,9 +464,12 @@
         return;
       }
 
+      const fmt = val => val != null ? val.toFixed(2) + "%" : "—";
+
       data.forEach(row => {
-        const statusClass = row.Status.includes("site") ? "status-site"
-          : row.Status.includes("remote") ? "status-remote" : "status-other";
+        const statusClass = row.Status.includes("site")   ? "status-site"
+                          : row.Status.includes("remote") ? "status-remote"
+                          : "status-other";
 
         tbody.innerHTML += `
           <tr>
@@ -446,9 +479,9 @@
             <td>${row.TeamLeader}</td>
             <td><span class="status-badge ${statusClass}">${row.Status}</span></td>
             <td>${row.Week}</td>
-            <td>${row.Productivity.toFixed(2)}%</td>
-            <td>${row.Utilization.toFixed(2)}%</td>
-            <td>${row.Occupancy.toFixed(2)}%</td>
+            <td>${fmt(row.Productivity)}</td>
+            <td>${fmt(row.Utilization)}</td>
+            <td>${fmt(row.Occupancy)}</td>
           </tr>`;
       });
     }
