@@ -304,43 +304,50 @@ async function loadData(){
   const rows =
     json.table.rows;
 
-  fullData =
-    rows.map(row => ({
+  fullData = rows.map(row => {
 
-      Code:
-        row.c[0]?.v || "",
+  const cells = row.c || [];
 
-      Name:
-        row.c[1]?.v || "",
+  return {
 
-      Account:
-        row.c[2]?.v || "",
+    Code:
+      cells[0]?.f || cells[0]?.v || "",
 
-      TeamLeader:
-        row.c[3]?.v || "",
+    Name:
+      cells[1]?.f || cells[1]?.v || "",
 
-      Date:
-        row.c[4]?.v || "",
+    Account:
+      cells[2]?.f || cells[2]?.v || "",
 
-      Status:
-        row.c[5]?.v || "",
+    TeamLeader:
+      cells[3]?.f || cells[3]?.v || "",
 
-      Productivity:
-        row.c[6]?.v || "0%",
+    Date:
+      cells[4]?.f || cells[4]?.v || "",
 
-      Utilization:
-        row.c[7]?.v || "0%",
+    Status:
+      cells[5]?.f || cells[5]?.v || "",
 
-      Occupancy:
-        row.c[8]?.v || "0%",
+    Productivity:
+      cells[6]?.f || cells[6]?.v || "0%",
 
-      Month:
-        row.c[9]?.v || "",
+    Utilization:
+      cells[7]?.f || cells[7]?.v || "0%",
 
-      Week:
-        row.c[11]?.v || ""
+    Occupancy:
+      cells[8]?.f || cells[8]?.v || "0%",
 
-    }));
+    Month:
+      cells[9]?.f || cells[9]?.v || "",
+
+    Week:
+      cells[11]?.f || cells[11]?.v || ""
+
+  };
+
+});
+
+console.log(fullData);
 
   populateFilters();
 
