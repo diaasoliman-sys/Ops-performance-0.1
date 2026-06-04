@@ -7,491 +7,332 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1e293b; }
+    header { background: #1e3a5f; color: white; padding: 18px 32px; font-size: 1.3rem; font-weight: 600; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
 
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f2f5;
-      color: #1e293b;
-    }
+    .filters { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+    .filters label { font-size: 0.8rem; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filters select { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 0.9rem; color: #1e293b; min-width: 160px; cursor: pointer; }
+    .filters select:focus { outline: none; border-color: #3b82f6; }
 
-    header {
-      background: #1e3a5f;
-      color: white;
-      padding: 18px 32px;
-      font-size: 1.3rem;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 24px 32px;
-    }
-
-    .filters {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
-    }
-
-    .filters label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #64748b;
-      display: block;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .filters select {
-      padding: 8px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      background: white;
-      font-size: 0.9rem;
-      color: #1e293b;
-      min-width: 160px;
-      cursor: pointer;
-    }
-
-    .filters select:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
-    }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .kpi-card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-      border-left: 4px solid #3b82f6;
-    }
-
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); border-left: 4px solid #3b82f6; }
     .kpi-card:nth-child(2) { border-left-color: #10b981; }
     .kpi-card:nth-child(3) { border-left-color: #f59e0b; }
     .kpi-card:nth-child(4) { border-left-color: #6366f1; }
     .kpi-card:nth-child(5) { border-left-color: #ec4899; }
     .kpi-card:nth-child(6) { border-left-color: #14b8a6; }
+    .kpi-label { font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .kpi-value { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
 
-    .kpi-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .kpi-value {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #1e293b;
-    }
-
-    .chart-card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-      margin-bottom: 24px;
-    }
-
-    .chart-card h2 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #475569;
-      margin-bottom: 16px;
-    }
-
+    .chart-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 24px; }
+    .chart-card h2 { font-size: 1rem; font-weight: 600; color: #475569; margin-bottom: 16px; }
     canvas { max-height: 300px; }
 
-    .table-card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-      overflow-x: auto;
-    }
+    .table-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); overflow-x: auto; }
+    .table-card h2 { font-size: 1rem; font-weight: 600; color: #475569; margin-bottom: 16px; }
 
-    .table-card h2 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #475569;
-      margin-bottom: 16px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-    }
-
-    thead th {
-      background: #f8fafc;
-      color: #64748b;
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.5px;
-      padding: 10px 14px;
-      text-align: left;
-      border-bottom: 2px solid #e2e8f0;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid #f1f5f9;
-      transition: background 0.15s;
-    }
-
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead th { background: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; padding: 10px 14px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+    tbody tr { border-bottom: 1px solid #f1f5f9; }
     tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 10px 14px; color: #334155; }
 
-    tbody td {
-      padding: 10px 14px;
-      color: #334155;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: capitalize;
-    }
-
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
     .status-site   { background: #dbeafe; color: #1d4ed8; }
     .status-remote { background: #d1fae5; color: #065f46; }
     .status-other  { background: #fef3c7; color: #92400e; }
 
-    #loading {
-      text-align: center;
-      padding: 60px;
-      color: #94a3b8;
-      font-size: 1rem;
-    }
+    .pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-size: 0.875rem; color: #64748b; }
+    .pagination button { padding: 6px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: white; cursor: pointer; font-size: 0.875rem; }
+    .pagination button:hover { background: #f1f5f9; }
+    .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #loading { text-align: center; padding: 60px; color: #94a3b8; font-size: 1rem; }
   </style>
 </head>
 <body>
 
-  <header>📊 Ops Performance Dashboard</header>
+<header>📊 Ops Performance Dashboard</header>
 
-  <div class="container">
+<div class="container">
 
-    <div class="filters">
-      <div>
-        <label for="accountFilter">Account</label>
-        <select id="accountFilter"><option value="All">All</option></select>
-      </div>
-      <div>
-        <label for="weekFilter">Week</label>
-        <select id="weekFilter"><option value="All">All</option></select>
-      </div>
-      <div>
-        <label for="codeFilter">Employee Code</label>
-        <select id="codeFilter"><option value="All">All</option></select>
-      </div>
+  <div class="filters">
+    <div>
+      <label for="accountFilter">Account</label>
+      <select id="accountFilter"><option value="All">All</option></select>
     </div>
-
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Employees</div>
-        <div class="kpi-value" id="employees">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">On-Site Rate</div>
-        <div class="kpi-value" id="onsiteRate">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Remote Rate</div>
-        <div class="kpi-value" id="remoteRate">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Avg Productivity</div>
-        <div class="kpi-value" id="avgProductivity">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Avg Utilization</div>
-        <div class="kpi-value" id="avgUtilization">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Avg Occupancy</div>
-        <div class="kpi-value" id="avgOccupancy">—</div>
-      </div>
+    <div>
+      <label for="weekFilter">Week</label>
+      <select id="weekFilter"><option value="All">All</option></select>
     </div>
-
-    <div class="chart-card">
-      <h2>Weekly Attendance — Site vs Remote</h2>
-      <canvas id="weeklyChart"></canvas>
+    <div>
+      <label for="codeFilter">Employee Code</label>
+      <select id="codeFilter"><option value="All">All</option></select>
     </div>
-
-    <div class="table-card">
-      <h2>Employee Records</h2>
-      <div id="loading">Loading data...</div>
-      <table id="dataTable" style="display:none;">
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Account</th>
-            <th>Team Leader</th>
-            <th>Status</th>
-            <th>Week</th>
-            <th>Productivity</th>
-            <th>Utilization</th>
-            <th>Occupancy</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-
   </div>
 
-  <script>
-    const SHEET_ID   = "1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0";
-    const SHEET_NAME = "Attendance";
-    const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Employees</div><div class="kpi-value" id="employees">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">On-Site Rate</div><div class="kpi-value" id="onsiteRate">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Remote Rate</div><div class="kpi-value" id="remoteRate">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Productivity</div><div class="kpi-value" id="avgProductivity">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Utilization</div><div class="kpi-value" id="avgUtilization">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Avg Occupancy</div><div class="kpi-value" id="avgOccupancy">—</div></div>
+  </div>
 
-    let fullData    = [];
-    let weeklyChart = null;
+  <div class="chart-card">
+    <h2>Weekly Attendance — Site vs Remote</h2>
+    <canvas id="weeklyChart"></canvas>
+  </div>
 
-    /* =========================
-       LOAD DATA
-    ========================= */
-    async function loadData() {
-      try {
-        const response = await fetch(URL);
-        const text     = await response.text();
+  <div class="table-card">
+    <h2>Employee Records</h2>
+    <div id="loading">Loading data...</div>
+    <table id="dataTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>Code</th><th>Name</th><th>Account</th><th>Team Leader</th>
+          <th>Status</th><th>Week</th><th>Productivity</th><th>Utilization</th><th>Occupancy</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="pagination" id="pagination" style="display:none;">
+      <span id="pageInfo"></span>
+      <div>
+        <button id="prevBtn" onclick="changePage(-1)">← Prev</button>
+        &nbsp;
+        <button id="nextBtn" onclick="changePage(1)">Next →</button>
+      </div>
+    </div>
+  </div>
 
-        // Safely extract JSON — avoids issues with varying wrapper lengths
-        const start = text.indexOf('{');
-        const end   = text.lastIndexOf('}');
-        const json  = JSON.parse(text.substring(start, end + 1));
-        const rows  = json.table.rows || [];
+</div>
 
-        const parsePercent = val => {
-          if (val == null) return null;
-          const num = parseFloat(val.toString().replace("%", ""));
-          if (isNaN(num)) return null;
-          // gviz returns decimals (0.1151 = 11.51%) — multiply by 100
-          return num <= 1 ? num * 100 : num;
-        };
+<script>
+  const SHEET_ID   = "1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0";
+  const SHEET_NAME = "Attendance";
+  const GVIZ_URL   = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
+  const PAGE_SIZE  = 100; // rows per page — keeps DOM fast
 
-        fullData = rows.map(row => {
-          const c = row.c || [];
+  let fullData    = [];
+  let filteredData = [];
+  let currentPage = 1;
+  let weeklyChart = null;
 
-          // Dates from gviz come as "Date(2026,2,21)" — convert to readable string
-          let dateVal = "";
-          if (c[4]?.v) {
-            const raw = c[4].v;
-            if (typeof raw === "string" && raw.startsWith("Date(")) {
-              const parts = raw.replace("Date(", "").replace(")", "").split(",");
-              const d = new Date(+parts[0], +parts[1], +parts[2]);
-              dateVal = d.toLocaleDateString("en-GB", {
-                day: "numeric", month: "long", year: "numeric"
-              });
-            } else {
-              dateVal = raw;
-            }
-          }
+  /* ---------- LOAD ---------- */
+  async function loadData() {
+    try {
+      const response = await fetch(GVIZ_URL);
+      const text     = await response.text();
 
-          const rawProd = c[6]?.v ?? null;
-          const rawUtil = c[7]?.v ?? null;
-          const rawOcc  = c[8]?.v ?? null;
+      const start = text.indexOf('{');
+      const end   = text.lastIndexOf('}');
+      const json  = JSON.parse(text.substring(start, end + 1));
+      const rows  = json.table.rows || [];
 
-          return {
-            Code:         (c[0]?.v ?? "").toString(),
-            Name:         c[1]?.v || "",
-            Account:      c[2]?.v || "",
-            TeamLeader:   c[3]?.v || "",
-            Date:         dateVal,
-            Status:       (c[5]?.v || "").toString().trim().toLowerCase(),
-            Productivity: parsePercent(rawProd),
-            Utilization:  parsePercent(rawUtil),
-            Occupancy:    parsePercent(rawOcc),
-            // Track whether metrics exist for this agent
-            hasMetrics:   rawProd != null,
-            Month:        c[9]?.v  || "",
-            WeekMonth:    c[10]?.v || "",
-            Week:         c[11]?.v || ""
-          };
-        });
+      const parsePercent = val => {
+        if (val == null) return null;
+        const num = parseFloat(val.toString().replace("%", ""));
+        if (isNaN(num)) return null;
+        return num <= 1 ? num * 100 : num;
+      };
 
-        document.getElementById("loading").style.display   = "none";
-        document.getElementById("dataTable").style.display = "table";
+      fullData = rows.map(row => {
+        const c = row.c || [];
 
-        populateFilters();
-        renderDashboard();
-
-      } catch (err) {
-        console.error("Failed to load data:", err);
-        document.getElementById("loading").innerText =
-          "⚠️ Could not load data. Check the console for details.";
-      }
-    }
-
-    /* =========================
-       FILTERS
-    ========================= */
-    function populateFilters() {
-      const codeFilter    = document.getElementById("codeFilter");
-      const weekFilter    = document.getElementById("weekFilter");
-      const accountFilter = document.getElementById("accountFilter");
-
-      codeFilter.innerHTML    = `<option value="All">All</option>`;
-      weekFilter.innerHTML    = `<option value="All">All</option>`;
-      accountFilter.innerHTML = `<option value="All">All</option>`;
-
-      [...new Set(fullData.map(x => x.Code))].filter(Boolean).sort()
-        .forEach(c => codeFilter.innerHTML    += `<option value="${c}">${c}</option>`);
-      [...new Set(fullData.map(x => x.Week))].filter(Boolean).sort()
-        .forEach(w => weekFilter.innerHTML    += `<option value="${w}">${w}</option>`);
-      [...new Set(fullData.map(x => x.Account))].filter(Boolean).sort()
-        .forEach(a => accountFilter.innerHTML += `<option value="${a}">${a}</option>`);
-    }
-
-    /* =========================
-       FILTER DATA
-    ========================= */
-    function getFilteredData() {
-      const code    = document.getElementById("codeFilter").value;
-      const week    = document.getElementById("weekFilter").value;
-      const account = document.getElementById("accountFilter").value;
-
-      return fullData.filter(row =>
-        (code    === "All" || row.Code    === code)    &&
-        (week    === "All" || row.Week    === week)    &&
-        (account === "All" || row.Account === account)
-      );
-    }
-
-    /* =========================
-       RENDER DASHBOARD
-    ========================= */
-    function renderDashboard() {
-      const data = getFilteredData();
-
-      // Unique employees
-      const uniqueEmployees = new Set(data.map(x => x.Code));
-      const totalEmployees  = uniqueEmployees.size;
-
-      const onsiteEmployees = new Set(data.filter(x => x.Status.includes("site")).map(x => x.Code));
-      const remoteEmployees = new Set(data.filter(x => x.Status.includes("remote")).map(x => x.Code));
-
-      const onsiteRate = totalEmployees ? (onsiteEmployees.size / totalEmployees) * 100 : 0;
-      const remoteRate = totalEmployees ? (remoteEmployees.size / totalEmployees) * 100 : 0;
-
-      // Only average rows that actually have metrics (exclude nulls)
-      const metricRows = data.filter(x => x.hasMetrics);
-      const avg = key => metricRows.length
-        ? metricRows.reduce((s, r) => s + (r[key] || 0), 0) / metricRows.length
-        : 0;
-
-      document.getElementById("employees").innerText       = totalEmployees;
-      document.getElementById("onsiteRate").innerText      = onsiteRate.toFixed(1) + "%";
-      document.getElementById("remoteRate").innerText      = remoteRate.toFixed(1) + "%";
-      document.getElementById("avgProductivity").innerText = avg("Productivity").toFixed(1) + "%";
-      document.getElementById("avgUtilization").innerText  = avg("Utilization").toFixed(1) + "%";
-      document.getElementById("avgOccupancy").innerText    = avg("Occupancy").toFixed(1) + "%";
-
-      // Chart
-      const weeklyData = {};
-      data.forEach(row => {
-        const w = row.Week || "Unknown";
-        if (!weeklyData[w]) weeklyData[w] = { site: new Set(), remote: new Set() };
-        if (row.Status.includes("site"))   weeklyData[w].site.add(row.Code);
-        if (row.Status.includes("remote")) weeklyData[w].remote.add(row.Code);
-      });
-
-      const labels       = Object.keys(weeklyData).sort();
-      const siteCounts   = labels.map(w => weeklyData[w].site.size);
-      const remoteCounts = labels.map(w => weeklyData[w].remote.size);
-
-      if (weeklyChart) weeklyChart.destroy();
-      weeklyChart = new Chart(document.getElementById("weeklyChart"), {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "Site",
-              data: siteCounts,
-              backgroundColor: "rgba(59,130,246,0.8)",
-              borderColor: "rgba(59,130,246,1)",
-              borderWidth: 1,
-              borderRadius: 4
-            },
-            {
-              label: "Remote",
-              data: remoteCounts,
-              backgroundColor: "rgba(16,185,129,0.8)",
-              borderColor: "rgba(16,185,129,1)",
-              borderWidth: 1,
-              borderRadius: 4
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: "top" },
-            tooltip: { mode: "index", intersect: false }
-          },
-          scales: {
-            x: { stacked: false },
-            y: { beginAtZero: true, ticks: { stepSize: 1 } }
-          }
+        let dateVal = "";
+        const dv = c[4]?.v;
+        if (dv && typeof dv === "string" && dv.startsWith("Date(")) {
+          const p = dv.replace("Date(","").replace(")","").split(",");
+          dateVal = new Date(+p[0], +p[1], +p[2])
+            .toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
+        } else if (dv) {
+          dateVal = dv;
         }
+
+        const rawProd = c[6]?.v ?? null;
+        const rawUtil = c[7]?.v ?? null;
+        const rawOcc  = c[8]?.v ?? null;
+
+        return {
+          Code:        (c[0]?.v ?? "").toString(),
+          Name:         c[1]?.v || "",
+          Account:      c[2]?.v || "",
+          TeamLeader:   c[3]?.v || "",
+          Date:         dateVal,
+          Status:       (c[5]?.v || "").toString().trim().toLowerCase(),
+          Productivity: parsePercent(rawProd),
+          Utilization:  parsePercent(rawUtil),
+          Occupancy:    parsePercent(rawOcc),
+          hasMetrics:   rawProd != null,
+          Month:        c[9]?.v  || "",
+          WeekMonth:    c[10]?.v || "",
+          Week:         c[11]?.v || ""
+        };
       });
 
-      // Table
-      const tbody = document.getElementById("tableBody");
-      tbody.innerHTML = "";
+      document.getElementById("loading").style.display   = "none";
+      document.getElementById("dataTable").style.display = "table";
 
-      if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">No data found for the selected filters.</td></tr>`;
-        return;
+      populateFilters();
+      applyFilters();
+
+    } catch (err) {
+      console.error("Load error:", err);
+      document.getElementById("loading").innerText = "⚠️ Could not load data. See console for details.";
+    }
+  }
+
+  /* ---------- FILTERS ---------- */
+  function populateFilters() {
+    const set = key => [...new Set(fullData.map(x => x[key]))].filter(Boolean).sort();
+
+    const fill = (id, items) => {
+      const el = document.getElementById(id);
+      el.innerHTML = `<option value="All">All</option>`;
+      items.forEach(v => el.innerHTML += `<option value="${v}">${v}</option>`);
+    };
+
+    fill("codeFilter",    set("Code"));
+    fill("weekFilter",    set("Week"));
+    fill("accountFilter", set("Account"));
+  }
+
+  function applyFilters() {
+    const code    = document.getElementById("codeFilter").value;
+    const week    = document.getElementById("weekFilter").value;
+    const account = document.getElementById("accountFilter").value;
+
+    filteredData = fullData.filter(row =>
+      (code    === "All" || row.Code    === code)    &&
+      (week    === "All" || row.Week    === week)    &&
+      (account === "All" || row.Account === account)
+    );
+
+    currentPage = 1;
+    renderDashboard();
+  }
+
+  /* ---------- DASHBOARD ---------- */
+  function renderDashboard() {
+    const data = filteredData;
+
+    const uniq = key => new Set(data.map(x => x[key]));
+    const totalEmployees  = uniq("Code").size;
+    const onsiteEmployees = new Set(data.filter(x => x.Status.includes("site")).map(x => x.Code));
+    const remoteEmployees = new Set(data.filter(x => x.Status.includes("remote")).map(x => x.Code));
+
+    const onsiteRate = totalEmployees ? (onsiteEmployees.size / totalEmployees) * 100 : 0;
+    const remoteRate = totalEmployees ? (remoteEmployees.size / totalEmployees) * 100 : 0;
+
+    const metricRows = data.filter(x => x.hasMetrics);
+    const avg = key => metricRows.length
+      ? metricRows.reduce((s, r) => s + (r[key] || 0), 0) / metricRows.length : 0;
+
+    document.getElementById("employees").innerText       = totalEmployees;
+    document.getElementById("onsiteRate").innerText      = onsiteRate.toFixed(1) + "%";
+    document.getElementById("remoteRate").innerText      = remoteRate.toFixed(1) + "%";
+    document.getElementById("avgProductivity").innerText = avg("Productivity").toFixed(1) + "%";
+    document.getElementById("avgUtilization").innerText  = avg("Utilization").toFixed(1) + "%";
+    document.getElementById("avgOccupancy").innerText    = avg("Occupancy").toFixed(1) + "%";
+
+    renderChart(data);
+    renderTable();
+  }
+
+  /* ---------- CHART ---------- */
+  function renderChart(data) {
+    const weeklyData = {};
+    data.forEach(row => {
+      const w = row.Week || "Unknown";
+      if (!weeklyData[w]) weeklyData[w] = { site: new Set(), remote: new Set() };
+      if (row.Status.includes("site"))   weeklyData[w].site.add(row.Code);
+      if (row.Status.includes("remote")) weeklyData[w].remote.add(row.Code);
+    });
+
+    const labels       = Object.keys(weeklyData).sort();
+    const siteCounts   = labels.map(w => weeklyData[w].site.size);
+    const remoteCounts = labels.map(w => weeklyData[w].remote.size);
+
+    if (weeklyChart) weeklyChart.destroy();
+    weeklyChart = new Chart(document.getElementById("weeklyChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          { label: "Site",   data: siteCounts,   backgroundColor: "rgba(59,130,246,0.8)", borderColor: "rgba(59,130,246,1)", borderWidth: 1, borderRadius: 4 },
+          { label: "Remote", data: remoteCounts, backgroundColor: "rgba(16,185,129,0.8)", borderColor: "rgba(16,185,129,1)", borderWidth: 1, borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "top" }, tooltip: { mode: "index", intersect: false } },
+        scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { stepSize: 1 } } }
       }
+    });
+  }
 
-      const fmt = val => val != null ? val.toFixed(2) + "%" : "—";
+  /* ---------- TABLE (paginated) ---------- */
+  function renderTable() {
+    const tbody      = document.getElementById("tableBody");
+    const pagination = document.getElementById("pagination");
+    tbody.innerHTML  = "";
 
-      data.forEach(row => {
-        const statusClass = row.Status.includes("site")   ? "status-site"
-                          : row.Status.includes("remote") ? "status-remote"
-                          : "status-other";
-
-        tbody.innerHTML += `
-          <tr>
-            <td>${row.Code}</td>
-            <td>${row.Name}</td>
-            <td>${row.Account}</td>
-            <td>${row.TeamLeader}</td>
-            <td><span class="status-badge ${statusClass}">${row.Status}</span></td>
-            <td>${row.Week}</td>
-            <td>${fmt(row.Productivity)}</td>
-            <td>${fmt(row.Utilization)}</td>
-            <td>${fmt(row.Occupancy)}</td>
-          </tr>`;
-      });
+    if (filteredData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">No data found.</td></tr>`;
+      pagination.style.display = "none";
+      return;
     }
 
-    document.getElementById("codeFilter").addEventListener("change",    renderDashboard);
-    document.getElementById("weekFilter").addEventListener("change",    renderDashboard);
-    document.getElementById("accountFilter").addEventListener("change", renderDashboard);
+    const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+    const start      = (currentPage - 1) * PAGE_SIZE;
+    const pageRows   = filteredData.slice(start, start + PAGE_SIZE);
+    const fmt        = val => val != null ? val.toFixed(2) + "%" : "—";
 
-    loadData();
-  </script>
+    // Build rows as a single string then set innerHTML once — much faster
+    let html = "";
+    pageRows.forEach(row => {
+      const statusClass = row.Status.includes("site")   ? "status-site"
+                        : row.Status.includes("remote") ? "status-remote"
+                        : "status-other";
+      html += `<tr>
+        <td>${row.Code}</td>
+        <td>${row.Name}</td>
+        <td>${row.Account}</td>
+        <td>${row.TeamLeader}</td>
+        <td><span class="status-badge ${statusClass}">${row.Status}</span></td>
+        <td>${row.Week}</td>
+        <td>${fmt(row.Productivity)}</td>
+        <td>${fmt(row.Utilization)}</td>
+        <td>${fmt(row.Occupancy)}</td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+
+    // Pagination controls
+    pagination.style.display = "flex";
+    document.getElementById("pageInfo").innerText =
+      `Showing ${start + 1}–${Math.min(start + PAGE_SIZE, filteredData.length)} of ${filteredData.length} records`;
+    document.getElementById("prevBtn").disabled = currentPage === 1;
+    document.getElementById("nextBtn").disabled = currentPage === totalPages;
+  }
+
+  function changePage(dir) {
+    currentPage += dir;
+    renderTable();
+    window.scrollTo({ top: document.getElementById("dataTable").offsetTop - 20, behavior: "smooth" });
+  }
+
+  /* ---------- EVENTS ---------- */
+  document.getElementById("codeFilter").addEventListener("change",    applyFilters);
+  document.getElementById("weekFilter").addEventListener("change",    applyFilters);
+  document.getElementById("accountFilter").addEventListener("change", applyFilters);
+
+  loadData();
+</script>
 
 </body>
 </html>
