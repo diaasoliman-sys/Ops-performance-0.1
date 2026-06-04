@@ -304,6 +304,8 @@ async function loadData(){
   const rows =
     json.table.rows;
 
+  console.log(rows[0]);
+
   fullData = rows.map(row => {
 
   const cells = row.c || [];
