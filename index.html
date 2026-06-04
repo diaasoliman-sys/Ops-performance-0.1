@@ -1,739 +1,231 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Operations Performance Dashboard</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:Arial,sans-serif;
-    }
-
-    body{
-      background:#f5f6fa;
-      padding:20px;
-      color:#1e293b;
-    }
-
-    h1{
-      margin-bottom:20px;
-      font-size:32px;
-    }
-
-    /*
-    =====================================
-    FILTERS
-    =====================================
-    */
-
-    .filters{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:15px;
-      margin-bottom:25px;
-    }
-
-    .filter-box{
-      background:white;
-      padding:15px;
-      border-radius:14px;
-      box-shadow:0 2px 10px rgba(0,0,0,.06);
-    }
-
-    .filter-box label{
-      display:block;
-      margin-bottom:8px;
-      font-size:14px;
-      color:#64748b;
-    }
-
-    select{
-      width:100%;
-      padding:10px;
-      border:1px solid #d1d5db;
-      border-radius:10px;
-      font-size:14px;
-    }
-
-    /*
-    =====================================
-    KPI CARDS
-    =====================================
-    */
-
-    .cards{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:20px;
-      margin-bottom:25px;
-    }
-
-    .card{
-      background:white;
-      padding:24px;
-      border-radius:18px;
-      box-shadow:0 2px 10px rgba(0,0,0,.06);
-    }
-
-    .card h3{
-      color:#64748b;
-      font-size:14px;
-      margin-bottom:10px;
-    }
-
-    .card h1{
-      font-size:34px;
-    }
-
-    /*
-    =====================================
-    CHARTS
-    =====================================
-    */
-
-    .charts{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:20px;
-      margin-bottom:25px;
-    }
-
-    .chart-box{
-      background:white;
-      padding:20px;
-      border-radius:18px;
-      box-shadow:0 2px 10px rgba(0,0,0,.06);
-    }
-
-    /*
-    =====================================
-    TABLE
-    =====================================
-    */
-
-    .table-box{
-      background:white;
-      padding:20px;
-      border-radius:18px;
-      box-shadow:0 2px 10px rgba(0,0,0,.06);
-      overflow-x:auto;
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-    }
-
-    th{
-      background:#f1f5f9;
-      padding:14px;
-      text-align:left;
-      font-size:14px;
-    }
-
-    td{
-      padding:14px;
-      border-bottom:1px solid #e5e7eb;
-      font-size:14px;
-    }
-
-    @media(max-width:900px){
-
-      .cards{
-        grid-template-columns:1fr;
-      }
-
-    }
-
-  </style>
-
-</head>
-
-<body>
-
-<h1>Operations Performance Dashboard</h1>
-
-<!-- FILTERS -->
-
-<div class="filters">
-
-  <div class="filter-box">
-    <label>Filter by Code</label>
-
-    <select id="codeFilter">
-      <option value="All">All</option>
-    </select>
-  </div>
-
-  <div class="filter-box">
-    <label>Filter by Week</label>
-
-    <select id="weekFilter">
-      <option value="All">All</option>
-    </select>
-  </div>
-
-  <div class="filter-box">
-    <label>Filter by Account</label>
-
-    <select id="accountFilter">
-      <option value="All">All</option>
-    </select>
-  </div>
-
-</div>
-
-<!-- KPI CARDS -->
-
-<div class="cards">
-
-  <div class="card">
-    <h3>Total Active Employees</h3>
-    <h1 id="employees">0</h1>
-  </div>
-
-  <div class="card">
-    <h3>On Site Rate</h3>
-    <h1 id="onsiteRate">0%</h1>
-  </div>
-
-  <div class="card">
-    <h3>From Home Rate</h3>
-    <h1 id="remoteRate">0%</h1>
-  </div>
-
-  <div class="card">
-    <h3>Avg Productivity</h3>
-    <h1 id="avgProductivity">0%</h1>
-  </div>
-
-  <div class="card">
-    <h3>Avg Utilization</h3>
-    <h1 id="avgUtilization">0%</h1>
-  </div>
-
-  <div class="card">
-    <h3>Avg Occupancy</h3>
-    <h1 id="avgOccupancy">0%</h1>
-  </div>
-
-</div>
-
-<!-- CHART -->
-
-<div class="charts">
-
-  <div class="chart-box">
-    <canvas id="weeklyChart"></canvas>
-  </div>
-
-</div>
-
-<!-- TABLE -->
-
-<div class="table-box">
-
-  <table>
-
-    <thead>
-
-      <tr>
-        <th>Code</th>
-        <th>Name</th>
-        <th>Account</th>
-        <th>Team Leader</th>
-        <th>Status</th>
-        <th>Week</th>
-        <th>Productivity</th>
-        <th>Utilization</th>
-        <th>Occupancy</th>
-      </tr>
-
-    </thead>
-
-    <tbody id="tableBody"></tbody>
-
-  </table>
-
-</div>
-
 <script>
 
-const SHEET_ID =
-"1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0";
-
-const SHEET_NAME =
-"Attendance";
+const SHEET_ID = "1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0";
+const SHEET_NAME = "Attendance";
 
 const URL =
 `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
 
 let fullData = [];
-
 let weeklyChart = null;
 
-/*
-=====================================
+/* =========================
 LOAD DATA
-=====================================
-*/
+========================= */
 
-async function loadData(){
+async function loadData() {
 
-  const response =
-    await fetch(URL);
+  const response = await fetch(URL);
+  const text = await response.text();
 
-  const text =
-    await response.text();
-
-  const json =
-    JSON.parse(
-      text.substring(47).slice(0,-2)
-    );
-
-  const rows =
-    json.table.rows;
-
-  console.log(rows[0]);
+  const json = JSON.parse(text.substring(47).slice(0, -2));
+  const rows = json.table.rows || [];
 
   fullData = rows.map(row => {
+    const c = row.c || [];
 
-  const cells = row.c || [];
-
-  return {
-
-    Code:
-      cells[0]?.f || cells[0]?.v || "",
-
-    Name:
-      cells[1]?.f || cells[1]?.v || "",
-
-    Account:
-      cells[2]?.f || cells[2]?.v || "",
-
-    TeamLeader:
-      cells[3]?.f || cells[3]?.v || "",
-
-    Date:
-      cells[4]?.f || cells[4]?.v || "",
-
-    Status:
-      cells[5]?.f || cells[5]?.v || "",
-
-    Productivity:
-      cells[6]?.f || cells[6]?.v || "0%",
-
-    Utilization:
-      cells[7]?.f || cells[7]?.v || "0%",
-
-    Occupancy:
-      cells[8]?.f || cells[8]?.v || "0%",
-
-    Month:
-      cells[9]?.f || cells[9]?.v || "",
-
-    Week:
-      cells[11]?.f || cells[11]?.v || ""
-
-  };
-
-});
-
-console.log(fullData);
+    return {
+      Code: c[0]?.v || "",
+      Name: c[1]?.v || "",
+      Account: c[2]?.v || "",
+      TeamLeader: c[3]?.v || "",
+      Date: c[4]?.v || "",
+      Status: (c[5]?.v || "").toString().toLowerCase(),
+      Productivity: parseFloat((c[6]?.v || 0).toString().replace("%", "")) || 0,
+      Utilization: parseFloat((c[7]?.v || 0).toString().replace("%", "")) || 0,
+      Occupancy: parseFloat((c[8]?.v || 0).toString().replace("%", "")) || 0,
+      Month: c[9]?.v || "",
+      WeekMonth: c[10]?.v || "",
+      Week: c[11]?.v || ""
+    };
+  });
 
   populateFilters();
-
   renderDashboard();
-
 }
 
-/*
-=====================================
-POPULATE FILTERS
-=====================================
-*/
+/* =========================
+FILTERS
+========================= */
 
-function populateFilters(){
+function populateFilters() {
 
-  const codeFilter =
-    document.getElementById("codeFilter");
+  const codeFilter = document.getElementById("codeFilter");
+  const weekFilter = document.getElementById("weekFilter");
+  const accountFilter = document.getElementById("accountFilter");
 
-  const weekFilter =
-    document.getElementById("weekFilter");
+  codeFilter.innerHTML = `<option value="All">All</option>`;
+  weekFilter.innerHTML = `<option value="All">All</option>`;
+  accountFilter.innerHTML = `<option value="All">All</option>`;
 
-  const accountFilter =
-    document.getElementById("accountFilter");
+  const uniqueCodes = [...new Set(fullData.map(x => x.Code))].filter(Boolean);
+  const uniqueWeeks = [...new Set(fullData.map(x => x.Week))].filter(Boolean);
+  const uniqueAccounts = [...new Set(fullData.map(x => x.Account))].filter(Boolean);
 
-  const uniqueCodes =
-    [...new Set(fullData.map(x=>x.Code))];
+  uniqueCodes.forEach(c =>
+    codeFilter.innerHTML += `<option value="${c}">${c}</option>`
+  );
 
-  const uniqueWeeks =
-    [...new Set(fullData.map(x=>x.Week))];
+  uniqueWeeks.forEach(w =>
+    weekFilter.innerHTML += `<option value="${w}">${w}</option>`
+  );
 
-  const uniqueAccounts =
-    [...new Set(fullData.map(x=>x.Account))];
-
-  uniqueCodes.forEach(code=>{
-
-    codeFilter.innerHTML +=
-      `<option value="${code}">${code}</option>`;
-
-  });
-
-  uniqueWeeks.forEach(week=>{
-
-    weekFilter.innerHTML +=
-      `<option value="${week}">${week}</option>`;
-
-  });
-
-  uniqueAccounts.forEach(account=>{
-
-    accountFilter.innerHTML +=
-      `<option value="${account}">${account}</option>`;
-
-  });
-
+  uniqueAccounts.forEach(a =>
+    accountFilter.innerHTML += `<option value="${a}">${a}</option>`
+  );
 }
 
-/*
-=====================================
+/* =========================
 FILTER DATA
-=====================================
-*/
+========================= */
 
-function getFilteredData(){
+function getFilteredData() {
 
-  const code =
-    document.getElementById("codeFilter").value;
+  const code = document.getElementById("codeFilter").value;
+  const week = document.getElementById("weekFilter").value;
+  const account = document.getElementById("accountFilter").value;
 
-  const week =
-    document.getElementById("weekFilter").value;
-
-  const account =
-    document.getElementById("accountFilter").value;
-
-  return fullData.filter(row => {
-
-    return (
-      (code === "All" || row.Code == code) &&
-      (week === "All" || row.Week == week) &&
-      (account === "All" || row.Account == account)
-    );
-
-  });
-
+  return fullData.filter(row =>
+    (code === "All" || row.Code == code) &&
+    (week === "All" || row.Week == week) &&
+    (account === "All" || row.Account == account)
+  );
 }
 
-/*
-=====================================
-CLEAN %
-=====================================
-*/
-
-function clean(value){
-
-  if(!value) return 0;
-
-  return parseFloat(
-    value.toString().replace("%","")
-  ) || 0;
-
-}
-
-/*
-=====================================
+/* =========================
 RENDER DASHBOARD
-=====================================
-*/
+========================= */
 
-function renderDashboard(){
+function renderDashboard() {
 
-  const data =
-    getFilteredData();
+  const data = getFilteredData();
 
-  /*
-  =====================================
-  UNIQUE EMPLOYEES
-  =====================================
-  */
+  const uniqueEmployees = new Set(data.map(x => x.Code));
+  const totalEmployees = uniqueEmployees.size;
 
-  const uniqueEmployees =
-    [...new Set(data.map(x=>x.Code))];
+  const onsiteEmployees = new Set(
+    data.filter(x => x.Status.includes("site")).map(x => x.Code)
+  );
 
-  const totalEmployees =
-    uniqueEmployees.length;
+  const remoteEmployees = new Set(
+    data.filter(x => x.Status.includes("remote")).map(x => x.Code)
+  );
 
-  /*
-  =====================================
-  SITE RATE
-  =====================================
-  */
+  const onsiteRate = totalEmployees ? (onsiteEmployees.size / totalEmployees) * 100 : 0;
+  const remoteRate = totalEmployees ? (remoteEmployees.size / totalEmployees) * 100 : 0;
 
-  const onsiteEmployees =
-    [...new Set(
+  const avgProductivity = data.length
+    ? data.reduce((s, r) => s + r.Productivity, 0) / data.length
+    : 0;
 
-      data
-        .filter(x =>
-          x.Status.toLowerCase().includes("site")
-        )
-        .map(x=>x.Code)
+  const avgUtilization = data.length
+    ? data.reduce((s, r) => s + r.Utilization, 0) / data.length
+    : 0;
 
-    )];
+  const avgOccupancy = data.length
+    ? data.reduce((s, r) => s + r.Occupancy, 0) / data.length
+    : 0;
 
-  const onsiteRate =
-    totalEmployees > 0
-    ?
-    (onsiteEmployees.length / totalEmployees) * 100
-    :
-    0;
-
-  /*
-  =====================================
-  REMOTE RATE
-  =====================================
-  */
-
-  const remoteEmployees =
-    [...new Set(
-
-      data
-        .filter(x =>
-          x.Status.toLowerCase().includes("remote")
-        )
-        .map(x=>x.Code)
-
-    )];
-
-  const remoteRate =
-    totalEmployees > 0
-    ?
-    (remoteEmployees.length / totalEmployees) * 100
-    :
-    0;
-
-  /*
-  =====================================
-  AVG
-  =====================================
-  */
-
-  const avgProductivity =
-    data.reduce(
-      (sum,row)=>sum + clean(row.Productivity),
-      0
-    ) / (data.length || 1);
-
-  const avgUtilization =
-    data.reduce(
-      (sum,row)=>sum + clean(row.Utilization),
-      0
-    ) / (data.length || 1);
-
-  const avgOccupancy =
-    data.reduce(
-      (sum,row)=>sum + clean(row.Occupancy),
-      0
-    ) / (data.length || 1);
-
-  /*
-  =====================================
+  /* =========================
   UPDATE KPI
-  =====================================
-  */
+  ========================= */
 
-  document.getElementById("employees").innerText =
-    totalEmployees;
+  document.getElementById("employees").innerText = totalEmployees;
+  document.getElementById("onsiteRate").innerText = onsiteRate.toFixed(1) + "%";
+  document.getElementById("remoteRate").innerText = remoteRate.toFixed(1) + "%";
+  document.getElementById("avgProductivity").innerText = avgProductivity.toFixed(1) + "%";
+  document.getElementById("avgUtilization").innerText = avgUtilization.toFixed(1) + "%";
+  document.getElementById("avgOccupancy").innerText = avgOccupancy.toFixed(1) + "%";
 
-  document.getElementById("onsiteRate").innerText =
-    onsiteRate.toFixed(1) + "%";
-
-  document.getElementById("remoteRate").innerText =
-    remoteRate.toFixed(1) + "%";
-
-  document.getElementById("avgProductivity").innerText =
-    avgProductivity.toFixed(1) + "%";
-
-  document.getElementById("avgUtilization").innerText =
-    avgUtilization.toFixed(1) + "%";
-
-  document.getElementById("avgOccupancy").innerText =
-    avgOccupancy.toFixed(1) + "%";
-
-  /*
-  =====================================
+  /* =========================
   WEEKLY CHART
-  =====================================
-  */
+  ========================= */
 
   const weeklyData = {};
 
   data.forEach(row => {
 
-    const week =
-      row.Week || "Unknown";
+    const week = row.Week || "Unknown";
 
-    if(!weeklyData[week]){
-
+    if (!weeklyData[week]) {
       weeklyData[week] = {
-        site:new Set(),
-        remote:new Set()
+        site: new Set(),
+        remote: new Set()
       };
-
     }
 
-    if(
-      row.Status.toLowerCase().includes("site")
-    ){
-
-      weeklyData[week]
-        .site
-        .add(row.Code);
-
+    if (row.Status.includes("site")) {
+      weeklyData[week].site.add(row.Code);
     }
 
-    if(
-      row.Status.toLowerCase().includes("remote")
-    ){
-
-      weeklyData[week]
-        .remote
-        .add(row.Code);
-
+    if (row.Status.includes("remote")) {
+      weeklyData[week].remote.add(row.Code);
     }
-
   });
 
-  const labels =
-    Object.keys(weeklyData);
+  const labels = Object.keys(weeklyData);
 
-  const siteCounts =
-    labels.map(
-      week => weeklyData[week].site.size
-    );
+  const siteCounts = labels.map(w => weeklyData[w].site.size);
+  const remoteCounts = labels.map(w => weeklyData[w].remote.size);
 
-  const remoteCounts =
-    labels.map(
-      week => weeklyData[week].remote.size
-    );
+  if (weeklyChart) weeklyChart.destroy();
 
-  if(weeklyChart){
-
-    weeklyChart.destroy();
-
-  }
-
-  weeklyChart =
-    new Chart(
-      document.getElementById("weeklyChart"),
-      {
-
-        type:"bar",
-
-        data:{
-
-          labels:labels,
-
-          datasets:[
-
-            {
-              label:"Site",
-              data:siteCounts
-            },
-
-            {
-              label:"Remote",
-              data:remoteCounts
-            }
-
-          ]
-
-        }
-
+  weeklyChart = new Chart(
+    document.getElementById("weeklyChart"),
+    {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Site",
+            data: siteCounts
+          },
+          {
+            label: "Remote",
+            data: remoteCounts
+          }
+        ]
       }
-    );
+    }
+  );
 
-  /*
-  =====================================
+  /* =========================
   TABLE
-  =====================================
-  */
+  ========================= */
 
-  const table =
-    document.getElementById("tableBody");
-
+  const table = document.getElementById("tableBody");
   table.innerHTML = "";
 
   data.forEach(row => {
-
     table.innerHTML += `
-
       <tr>
-
         <td>${row.Code}</td>
         <td>${row.Name}</td>
         <td>${row.Account}</td>
         <td>${row.TeamLeader}</td>
         <td>${row.Status}</td>
         <td>${row.Week}</td>
-        <td>${row.Productivity}</td>
-        <td>${row.Utilization}</td>
-        <td>${row.Occupancy}</td>
-
+        <td>${row.Productivity}%</td>
+        <td>${row.Utilization}%</td>
+        <td>${row.Occupancy}%</td>
       </tr>
-
     `;
-
   });
-
 }
 
-/*
-=====================================
-FILTER EVENTS
-=====================================
-*/
+/* =========================
+EVENTS
+========================= */
 
-document
-  .getElementById("codeFilter")
-  .addEventListener(
-    "change",
-    renderDashboard
-  );
+document.getElementById("codeFilter").addEventListener("change", renderDashboard);
+document.getElementById("weekFilter").addEventListener("change", renderDashboard);
+document.getElementById("accountFilter").addEventListener("change", renderDashboard);
 
-document
-  .getElementById("weekFilter")
-  .addEventListener(
-    "change",
-    renderDashboard
-  );
-
-document
-  .getElementById("accountFilter")
-  .addEventListener(
-    "change",
-    renderDashboard
-  );
-
-/*
-=====================================
+/* =========================
 START
-=====================================
-*/
+========================= */
 
 loadData();
 
 </script>
-
-</body>
-</html>
