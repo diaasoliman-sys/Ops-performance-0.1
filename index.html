@@ -74,7 +74,6 @@
   </div>
 
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Absent Rate</div><div class="kpi-value" id="absentRate">—</div></div>
     <div class="kpi-card"><div class="kpi-label">On-Site Rate</div><div class="kpi-value" id="onsiteRate">—</div></div>
     <div class="kpi-card"><div class="kpi-label">Remote Rate</div><div class="kpi-value" id="remoteRate">—</div></div>
     <div class="kpi-card"><div class="kpi-label">Avg Productivity</div><div class="kpi-value" id="avgProductivity">—</div></div>
@@ -297,7 +296,6 @@ const remoteRows = activeRows.filter(x => x.Status === "active - remote").length
 
 const absentRows = data.filter(x => absentStatuses.includes(x.Status));
 const absentRate = data.length ? (absentRows.length / data.length) * 100 : 0;
-    document.getElementById("absentRate").innerText = absentRate.toFixed(1) + "%";
     document.getElementById("onsiteRate").innerText      = onsiteRate.toFixed(1) + "%";
     document.getElementById("remoteRate").innerText      = remoteRate.toFixed(1) + "%";
     document.getElementById("avgProductivity").innerText = avg("Productivity").toFixed(1) + "%";
