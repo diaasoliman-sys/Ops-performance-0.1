@@ -1,9 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Operations Dashboard</title>
 
@@ -60,11 +58,9 @@
 
     table{
       width:100%;
-      margin-top:20px;
       border-collapse:collapse;
       background:white;
-      border-radius:15px;
-      overflow:hidden;
+      margin-top:30px;
     }
 
     th,td{
@@ -124,12 +120,14 @@
 <table>
 
   <thead>
+
     <tr>
-      <th>Agent</th>
+      <th>Name</th>
       <th>Account</th>
       <th>Productivity</th>
       <th>Status</th>
     </tr>
+
   </thead>
 
   <tbody id="tableBody"></tbody>
@@ -138,23 +136,86 @@
 
 <script>
 
-const SHEET_URL =
-"https://opensheet.elk.sh/1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0/Attendance";
+const SHEET_ID =
+"1GfybYgbwlbIev0yxei_PW8pRNd7yRWhuwA-3ZNBfHp0";
+
+/*
+========================================
+GOOGLE SHEET JSON
+========================================
+*/
+
+const URL =
+`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Attendance`;
 
 async function loadDashboard(){
 
   try{
 
-    const response = await fetch(SHEET_URL);
+    const response =
+      await fetch(URL);
 
-    const data = await response.json();
+    const text =
+      await response.text();
+
+    /*
+    ========================================
+    CLEAN GOOGLE RESPONSE
+    ========================================
+    */
+
+    const json =
+      JSON.parse(
+        text.substring(47).slice(0,-2)
+      );
+
+    const rows =
+      json.table.rows;
+
+    /*
+    ========================================
+    CONVERT TO OBJECTS
+    ========================================
+    */
+
+    const data =
+      rows.map(row => ({
+
+        Code:
+          row.c[0]?.v || "",
+
+        Name:
+          row.c[1]?.v || "",
+
+        Account:
+          row.c[2]?.v || "",
+
+        TeamLeader:
+          row.c[3]?.v || "",
+
+        Date:
+          row.c[4]?.v || "",
+
+        Status:
+          row.c[5]?.v || "",
+
+        Productivity:
+          row.c[6]?.v || "0%",
+
+        Utilization:
+          row.c[7]?.v || "0%",
+
+        Occupancy:
+          row.c[8]?.v || "0%"
+
+      }));
 
     console.log(data);
 
     /*
-    ==========================
+    ========================================
     CLEAN %
-    ==========================
+    ========================================
     */
 
     const clean = (value) => {
@@ -168,59 +229,60 @@ async function loadDashboard(){
     };
 
     /*
-    ==========================
+    ========================================
     KPI
-    ==========================
+    ========================================
     */
 
-    const employees = data.length;
-
-    const onsite = data.filter(
-      x => x.Status &&
-      x.Status.toLowerCase().includes("site")
-    ).length;
-
-    const avgProductivity =
-      data.reduce(
-        (sum,row)=>sum + clean(row.Productivity),
-        0
-      ) / employees;
-
-    const avgUtilization =
-      data.reduce(
-        (sum,row)=>sum + clean(row.Utilization),
-        0
-      ) / employees;
-
     document.getElementById("employees").innerText =
-      employees;
+      data.length;
+
+    const onsite =
+      data.filter(
+        x => x.Status.includes("Site")
+      ).length;
 
     document.getElementById("onsite").innerText =
       onsite;
 
+    const avgProd =
+      data.reduce(
+        (sum,row)=>sum + clean(row.Productivity),
+        0
+      ) / data.length;
+
     document.getElementById("productivity").innerText =
-      avgProductivity.toFixed(1) + "%";
+      avgProd.toFixed(1) + "%";
+
+    const avgUtil =
+      data.reduce(
+        (sum,row)=>sum + clean(row.Utilization),
+        0
+      ) / data.length;
 
     document.getElementById("utilization").innerText =
-      avgUtilization.toFixed(1) + "%";
+      avgUtil.toFixed(1) + "%";
 
     /*
-    ==========================
+    ========================================
     STATUS CHART
-    ==========================
+    ========================================
     */
 
-    const statusCounts = {};
+    const statusCount = {};
 
-    data.forEach(row=>{
+    data.forEach(row => {
 
-      const status = row.Status || "Unknown";
+      const status =
+        row.Status || "Unknown";
 
-      if(!statusCounts[status]){
-        statusCounts[status] = 0;
+      if(!statusCount[status]){
+
+        statusCount[status] = 0;
+
       }
 
-      statusCounts[status]++;
+      statusCount[status]++;
 
     });
 
@@ -230,33 +292,36 @@ async function loadDashboard(){
         type:"bar",
 
         data:{
-          labels:Object.keys(statusCounts),
+          labels:Object.keys(statusCount),
 
           datasets:[{
             label:"Employees",
-            data:Object.values(statusCounts)
+            data:Object.values(statusCount)
           }]
         }
       }
     );
 
     /*
-    ==========================
+    ========================================
     ACCOUNT CHART
-    ==========================
+    ========================================
     */
 
-    const accountCounts = {};
+    const accountCount = {};
 
-    data.forEach(row=>{
+    data.forEach(row => {
 
-      const account = row.Account || "Unknown";
+      const account =
+        row.Account || "Unknown";
 
-      if(!accountCounts[account]){
-        accountCounts[account] = 0;
+      if(!accountCount[account]){
+
+        accountCount[account] = 0;
+
       }
 
-      accountCounts[account]++;
+      accountCount[account]++;
 
     });
 
@@ -266,19 +331,19 @@ async function loadDashboard(){
         type:"pie",
 
         data:{
-          labels:Object.keys(accountCounts),
+          labels:Object.keys(accountCount),
 
           datasets:[{
-            data:Object.values(accountCounts)
+            data:Object.values(accountCount)
           }]
         }
       }
     );
 
     /*
-    ==========================
+    ========================================
     TABLE
-    ==========================
+    ========================================
     */
 
     const table =
@@ -286,15 +351,15 @@ async function loadDashboard(){
 
     table.innerHTML = "";
 
-    data.slice(0,20).forEach(row=>{
+    data.slice(0,20).forEach(row => {
 
       table.innerHTML += `
 
         <tr>
-          <td>${row.Name || ""}</td>
-          <td>${row.Account || ""}</td>
-          <td>${row.Productivity || ""}</td>
-          <td>${row.Status || ""}</td>
+          <td>${row.Name}</td>
+          <td>${row.Account}</td>
+          <td>${row.Productivity}</td>
+          <td>${row.Status}</td>
         </tr>
 
       `;
@@ -307,11 +372,7 @@ async function loadDashboard(){
 
     console.error(error);
 
-    document.body.innerHTML += `
-      <h2 style="color:red">
-        Error Loading Dashboard
-      </h2>
-    `;
+    alert("ERROR CHECK CONSOLE");
 
   }
 
