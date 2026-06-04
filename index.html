@@ -123,8 +123,7 @@
   let weeklyChart  = null;
 
   // Statuses considered as "on leave" — excluded from site/remote rate calculation
-  const LEAVE_KEYWORDS = ["off", "annual", "casual", "sick", "leave", "absent", "holiday", "vacation"];
-  const isLeave = status => LEAVE_KEYWORDS.some(k => status.includes(k));
+  const isLeave = status => !status.includes("active");
 
   /* ---------- LOAD ---------- */
   async function loadData() {
@@ -280,8 +279,8 @@
     const activeRows = data.filter(x => !isLeave(x.Status));
     const totalActive = activeRows.length;
 
-    const siteRows   = activeRows.filter(x => x.Status.includes("site")).length;
-    const remoteRows = activeRows.filter(x => x.Status.includes("remote")).length;
+    const siteRows   = activeRows.filter(x => x.Status === "active - site").length;
+const remoteRows = activeRows.filter(x => x.Status === "active - remote").length;
 
     const onsiteRate = totalActive ? (siteRows   / totalActive) * 100 : 0;
     const remoteRate = totalActive ? (remoteRows / totalActive) * 100 : 0;
