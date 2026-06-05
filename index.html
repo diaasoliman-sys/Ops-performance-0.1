@@ -63,6 +63,10 @@
       <select id="accountFilter"><option value="All">All</option></select>
     </div>
     <div>
+      <label for="monthFilter">Month</label>
+      <select id="monthFilter"><option value="All">All</option></select>
+    </div>
+    <div>
       <label for="weekFilter">Week</label>
       <select id="weekFilter"><option value="All">All</option></select>
     </div>
@@ -198,12 +202,14 @@
   /* ---------- FILTERS ---------- */
   function populateFilters(data) {
     const currentAccount   = document.getElementById("accountFilter").value;
+    const currentMonth     = document.getElementById("monthFilter").value;
     const currentWeek      = document.getElementById("weekFilter").value;
     const currentWeekMonth = document.getElementById("weekMonthFilter").value;
     const currentDate      = document.getElementById("dateFilter").value;
     const currentCode      = document.getElementById("codeFilter").value;
 
     const uniqueAccounts   = [...new Set(fullData.map(x => x.Account))].filter(Boolean).sort();
+    const uniqueMonths     = [...new Set(data.map(x => x.Month))].filter(Boolean).sort();
     const uniqueWeeks      = [...new Set(data.map(x => x.Week))].filter(Boolean).sort();
     const uniqueWeekMonths = [...new Set(data.map(x => x.WeekMonth))].filter(Boolean).sort();
     const uniqueDates      = [...new Set(data.map(x => x.Date))].filter(Boolean).sort();
@@ -220,6 +226,7 @@
     };
 
     fill("accountFilter",   uniqueAccounts,   currentAccount);
+    fill("monthFilter",     uniqueMonths,     currentMonth);
     fill("weekFilter",      uniqueWeeks,      currentWeek);
     fill("weekMonthFilter", uniqueWeekMonths, currentWeekMonth);
     fill("dateFilter",      uniqueDates,      currentDate);
@@ -233,11 +240,24 @@
     applyFilters();
   }
 
+  function onMonthChange() {
+    const account = document.getElementById("accountFilter").value;
+    const month   = document.getElementById("monthFilter").value;
+    const scoped  = fullData.filter(x =>
+      (account === "All" || x.Account === account) &&
+      (month   === "All" || x.Month   === month)
+    );
+    populateFilters(scoped);
+    applyFilters();
+  }
+
   function onWeekChange() {
     const account = document.getElementById("accountFilter").value;
+    const month   = document.getElementById("monthFilter").value;
     const week    = document.getElementById("weekFilter").value;
     const scoped  = fullData.filter(x =>
       (account === "All" || x.Account === account) &&
+      (month   === "All" || x.Month   === month)   &&
       (week    === "All" || x.Week    === week)
     );
     populateFilters(scoped);
@@ -246,11 +266,13 @@
 
   function onWeekMonthChange() {
     const account   = document.getElementById("accountFilter").value;
+    const month     = document.getElementById("monthFilter").value;
     const week      = document.getElementById("weekFilter").value;
     const weekMonth = document.getElementById("weekMonthFilter").value;
     const scoped    = fullData.filter(x =>
-      (account   === "All" || x.Account   === account) &&
-      (week      === "All" || x.Week      === week)    &&
+      (account   === "All" || x.Account   === account)   &&
+      (month     === "All" || x.Month     === month)     &&
+      (week      === "All" || x.Week      === week)      &&
       (weekMonth === "All" || x.WeekMonth === weekMonth)
     );
     populateFilters(scoped);
@@ -260,6 +282,7 @@
   /* ---------- APPLY FILTERS ---------- */
   function applyFilters() {
     const account   = document.getElementById("accountFilter").value;
+    const month     = document.getElementById("monthFilter").value;
     const week      = document.getElementById("weekFilter").value;
     const weekMonth = document.getElementById("weekMonthFilter").value;
     const date      = document.getElementById("dateFilter").value;
@@ -267,6 +290,7 @@
 
     filteredData = fullData.filter(row =>
       (account   === "All" || row.Account   === account)   &&
+      (month     === "All" || row.Month     === month)     &&
       (week      === "All" || row.Week      === week)       &&
       (weekMonth === "All" || row.WeekMonth === weekMonth)  &&
       (date      === "All" || row.Date      === date)       &&
@@ -387,6 +411,7 @@
 
   /* ---------- EVENTS ---------- */
   document.getElementById("accountFilter").addEventListener("change",   onAccountChange);
+  document.getElementById("monthFilter").addEventListener("change",     onMonthChange);
   document.getElementById("weekFilter").addEventListener("change",      onWeekChange);
   document.getElementById("weekMonthFilter").addEventListener("change", onWeekMonthChange);
   document.getElementById("dateFilter").addEventListener("change",      applyFilters);
