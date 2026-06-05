@@ -102,15 +102,9 @@
     <canvas id="trendChart"></canvas>
   </div>
 
-  <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-    <div class="chart-card" style="margin-bottom:0">
-      <h2>Site vs Remote — Avg Productivity</h2>
-      <canvas id="siteRemoteChart"></canvas>
-    </div>
-    <div class="chart-card" style="margin-bottom:0">
-      <h2>Daily Attendance Heatmap</h2>
-      <canvas id="heatmapChart"></canvas>
-    </div>
+  <div class="chart-card">
+    <h2>Daily Attendance Heatmap</h2>
+    <canvas id="heatmapChart"></canvas>
   </div>
 
   <div class="table-card">
@@ -148,7 +142,6 @@
   let currentPage  = 1;
   let weeklyChart    = null;
   let trendChart     = null;
-  let siteRemoteChart = null;
   let heatmapChart   = null;
 
   const isLeave = status => !status.includes("active");
@@ -347,7 +340,6 @@
 
     renderChart(data);
     renderTrendChart(data);
-    renderSiteRemoteChart(data);
     renderHeatmapChart(data);
     renderTable();
   }
@@ -412,36 +404,6 @@
       options: {
         responsive: true,
         plugins: { legend: { position: "top" }, tooltip: { mode: "index", intersect: false } },
-        scales: { y: { beginAtZero: true, ticks: { callback: v => v + "%" } } }
-      }
-    });
-  }
-
-  /* ---------- SITE VS REMOTE CHART ---------- */
-  function renderSiteRemoteChart(data) {
-    const groups = { "Site": { prod: [], util: [], occ: [] }, "Remote": { prod: [], util: [], occ: [] } };
-    data.filter(x => x.Status.includes("active") && x.hasMetrics).forEach(row => {
-      const g = row.Status.includes("site") ? "Site" : "Remote";
-      if (row.Productivity != null) groups[g].prod.push(row.Productivity);
-      if (row.Utilization  != null) groups[g].util.push(row.Utilization);
-      if (row.Occupancy    != null) groups[g].occ.push(row.Occupancy);
-    });
-
-    const avgArr = arr => arr.length ? (arr.reduce((a,b) => a+b,0) / arr.length).toFixed(1) : 0;
-
-    if (siteRemoteChart) siteRemoteChart.destroy();
-    siteRemoteChart = new Chart(document.getElementById("siteRemoteChart"), {
-      type: "bar",
-      data: {
-        labels: ["Productivity", "Utilization", "Occupancy"],
-        datasets: [
-          { label: "Site",   data: [avgArr(groups.Site.prod),   avgArr(groups.Site.util),   avgArr(groups.Site.occ)],   backgroundColor: "rgba(59,130,246,0.8)",  borderColor: "rgba(59,130,246,1)",  borderWidth: 1, borderRadius: 4 },
-          { label: "Remote", data: [avgArr(groups.Remote.prod), avgArr(groups.Remote.util), avgArr(groups.Remote.occ)], backgroundColor: "rgba(16,185,129,0.8)", borderColor: "rgba(16,185,129,1)", borderWidth: 1, borderRadius: 4 }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: "top" }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ": " + ctx.parsed.y + "%" } } },
         scales: { y: { beginAtZero: true, ticks: { callback: v => v + "%" } } }
       }
     });
