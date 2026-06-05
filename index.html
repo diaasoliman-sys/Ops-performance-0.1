@@ -315,11 +315,8 @@
     const remoteRate = totalActive ? (remoteRows / totalActive) * 100 : 0;
 
     const metricRows = data.filter(x => x.hasMetrics && x.Status.includes("active"));
-    // Fixed - only counts rows where that specific metric is not null
-    const avg = key => {
-    const valid = metricRows.filter(r => r[key] != null);
-    return valid.length ? valid.reduce((s, r) => s + r[key], 0) / valid.length : 0;
-};
+    const avg = key => metricRows.length
+      ? metricRows.reduce((s, r) => s + (r[key] || 0), 0) / metricRows.length : 0;
 
     document.getElementById("onsiteRate").innerText      = onsiteRate.toFixed(1) + "%";
     document.getElementById("remoteRate").innerText      = remoteRate.toFixed(1) + "%";
