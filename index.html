@@ -314,7 +314,7 @@
     const onsiteRate = totalActive ? (siteRows   / totalActive) * 100 : 0;
     const remoteRate = totalActive ? (remoteRows / totalActive) * 100 : 0;
 
-    const metricRows = data.filter(x => x.hasMetrics);
+    const metricRows = data.filter(x => x.hasMetrics && x.Status.includes("active"));
     const avg = key => metricRows.length
       ? metricRows.reduce((s, r) => s + (r[key] || 0), 0) / metricRows.length : 0;
 
