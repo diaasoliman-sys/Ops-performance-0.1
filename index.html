@@ -420,16 +420,30 @@
   function renderHeatmapChart(data) {
     const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const counts = { site: Array(7).fill(0), remote: Array(7).fill(0) };
+    const weeks  = { site: Array(7).fill(0), remote: Array(7).fill(0) };
 
     data.forEach(row => {
       if (!row.Date) return;
-      // Parse date string like "21 March 2026"
       const d = new Date(row.Date);
       if (isNaN(d)) return;
       const day = d.getDay();
-      if (row.Status.includes("site"))   counts.site[day]++;
-      if (row.Status.includes("remote")) counts.remote[day]++;
+      if (row.Status.includes("site"))   { counts.site[day]++;   weeks.site[day]++; }
+      if (row.Status.includes("remote")) { counts.remote[day]++; weeks.remote[day]++; }
     });
+
+    // Get unique dates per day to calculate true average
+    const uniqueDates = { site: Array.from({length:7}, () => new Set()), remote: Array.from({length:7}, () => new Set()) };
+    data.forEach(row => {
+      if (!row.Date) return;
+      const d = new Date(row.Date);
+      if (isNaN(d)) return;
+      const day = d.getDay();
+      if (row.Status.includes("site"))   uniqueDates.site[day].add(row.Date);
+      if (row.Status.includes("remote")) uniqueDates.remote[day].add(row.Date);
+    });
+
+    const avgSite   = counts.site.map((c, i)   => uniqueDates.site[i].size   ? (c / uniqueDates.site[i].size).toFixed(1)   : 0);
+    const avgRemote = counts.remote.map((c, i) => uniqueDates.remote[i].size ? (c / uniqueDates.remote[i].size).toFixed(1) : 0);
 
     if (heatmapChart) heatmapChart.destroy();
     heatmapChart = new Chart(document.getElementById("heatmapChart"), {
@@ -437,14 +451,14 @@
       data: {
         labels: days,
         datasets: [
-          { label: "Site",   data: counts.site,   backgroundColor: "rgba(59,130,246,0.8)",  borderColor: "rgba(59,130,246,1)",  borderWidth: 1, borderRadius: 4 },
-          { label: "Remote", data: counts.remote, backgroundColor: "rgba(16,185,129,0.8)", borderColor: "rgba(16,185,129,1)", borderWidth: 1, borderRadius: 4 }
+          { label: "Site",   data: avgSite,   backgroundColor: "rgba(59,130,246,0.8)",  borderColor: "rgba(59,130,246,1)",  borderWidth: 1, borderRadius: 4 },
+          { label: "Remote", data: avgRemote, backgroundColor: "rgba(16,185,129,0.8)", borderColor: "rgba(16,185,129,1)", borderWidth: 1, borderRadius: 4 }
         ]
       },
       options: {
         responsive: true,
-        plugins: { legend: { position: "top" }, tooltip: { mode: "index", intersect: false } },
-        scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        plugins: { legend: { position: "top" }, tooltip: { mode: "index", intersect: false, callbacks: { label: ctx => ctx.dataset.label + ": " + ctx.parsed.y + " agents avg" } } },
+        scales: { x: { stacked: false }, y: { beginAtZero: true } }
       }
     });
   }
