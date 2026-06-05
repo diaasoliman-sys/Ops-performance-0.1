@@ -22,7 +22,6 @@
     .kpi-card:nth-child(3) { border-left-color: #f59e0b; }
     .kpi-card:nth-child(4) { border-left-color: #6366f1; }
     .kpi-card:nth-child(5) { border-left-color: #ec4899; }
-    .kpi-card:nth-child(6) { border-left-color: #14b8a6; }
     .kpi-label { font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
     .kpi-value { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
 
@@ -66,6 +65,14 @@
     <div>
       <label for="weekFilter">Week</label>
       <select id="weekFilter"><option value="All">All</option></select>
+    </div>
+    <div>
+      <label for="weekMonthFilter">Week of Month</label>
+      <select id="weekMonthFilter"><option value="All">All</option></select>
+    </div>
+    <div>
+      <label for="dateFilter">Date</label>
+      <select id="dateFilter"><option value="All">All</option></select>
     </div>
     <div>
       <label for="codeFilter">Employee Code</label>
@@ -121,7 +128,6 @@
   let currentPage  = 1;
   let weeklyChart  = null;
 
-  // Statuses considered as "on leave" — excluded from site/remote rate calculation
   const isLeave = status => !status.includes("active");
 
   /* ---------- LOAD ---------- */
@@ -180,7 +186,7 @@
       document.getElementById("loading").style.display   = "none";
       document.getElementById("dataTable").style.display = "table";
 
-      populateFilters(fullData); // populate with full data on first load
+      populateFilters(fullData);
       applyFilters();
 
     } catch (err) {
@@ -189,18 +195,19 @@
     }
   }
 
-  /* ---------- DEPENDENT FILTERS ---------- */
-
-  // Populate all three filters based on a given dataset
-  // Preserve current selections where still valid
+  /* ---------- FILTERS ---------- */
   function populateFilters(data) {
-    const currentAccount = document.getElementById("accountFilter").value;
-    const currentWeek    = document.getElementById("weekFilter").value;
-    const currentCode    = document.getElementById("codeFilter").value;
+    const currentAccount   = document.getElementById("accountFilter").value;
+    const currentWeek      = document.getElementById("weekFilter").value;
+    const currentWeekMonth = document.getElementById("weekMonthFilter").value;
+    const currentDate      = document.getElementById("dateFilter").value;
+    const currentCode      = document.getElementById("codeFilter").value;
 
-    const uniqueAccounts = [...new Set(fullData.map(x => x.Account))].filter(Boolean).sort();
-    const uniqueWeeks    = [...new Set(data.map(x => x.Week))].filter(Boolean).sort();
-    const uniqueCodes    = [...new Set(data.map(x => x.Code))].filter(Boolean).sort();
+    const uniqueAccounts   = [...new Set(fullData.map(x => x.Account))].filter(Boolean).sort();
+    const uniqueWeeks      = [...new Set(data.map(x => x.Week))].filter(Boolean).sort();
+    const uniqueWeekMonths = [...new Set(data.map(x => x.WeekMonth))].filter(Boolean).sort();
+    const uniqueDates      = [...new Set(data.map(x => x.Date))].filter(Boolean).sort();
+    const uniqueCodes      = [...new Set(data.map(x => x.Code))].filter(Boolean).sort();
 
     const fill = (id, items, preserve) => {
       const el = document.getElementById(id);
@@ -209,20 +216,16 @@
         const selected = v === preserve ? ' selected' : '';
         el.innerHTML += `<option value="${v}"${selected}>${v}</option>`;
       });
-      // If preserved value no longer exists in new list, reset to All
-      if (preserve !== "All" && !items.includes(preserve)) {
-        el.value = "All";
-      }
+      if (preserve !== "All" && !items.includes(preserve)) el.value = "All";
     };
 
-    // Account filter always shows all accounts
-    fill("accountFilter", uniqueAccounts, currentAccount);
-    // Week and Code filters are scoped to currently selected account
-    fill("weekFilter",    uniqueWeeks,    currentWeek);
-    fill("codeFilter",    uniqueCodes,    currentCode);
+    fill("accountFilter",   uniqueAccounts,   currentAccount);
+    fill("weekFilter",      uniqueWeeks,      currentWeek);
+    fill("weekMonthFilter", uniqueWeekMonths, currentWeekMonth);
+    fill("dateFilter",      uniqueDates,      currentDate);
+    fill("codeFilter",      uniqueCodes,      currentCode);
   }
 
-  // When account changes, re-scope week and code filters
   function onAccountChange() {
     const account = document.getElementById("accountFilter").value;
     const scoped  = account === "All" ? fullData : fullData.filter(x => x.Account === account);
@@ -230,7 +233,6 @@
     applyFilters();
   }
 
-  // When week changes, re-scope code filter
   function onWeekChange() {
     const account = document.getElementById("accountFilter").value;
     const week    = document.getElementById("weekFilter").value;
@@ -238,28 +240,37 @@
       (account === "All" || x.Account === account) &&
       (week    === "All" || x.Week    === week)
     );
-    const currentCode = document.getElementById("codeFilter").value;
-    const uniqueCodes = [...new Set(scoped.map(x => x.Code))].filter(Boolean).sort();
-    const codeEl      = document.getElementById("codeFilter");
-    codeEl.innerHTML  = `<option value="All">All</option>`;
-    uniqueCodes.forEach(v => {
-      const selected = v === currentCode ? ' selected' : '';
-      codeEl.innerHTML += `<option value="${v}"${selected}>${v}</option>`;
-    });
-    if (currentCode !== "All" && !uniqueCodes.includes(currentCode)) codeEl.value = "All";
+    populateFilters(scoped);
+    applyFilters();
+  }
+
+  function onWeekMonthChange() {
+    const account   = document.getElementById("accountFilter").value;
+    const week      = document.getElementById("weekFilter").value;
+    const weekMonth = document.getElementById("weekMonthFilter").value;
+    const scoped    = fullData.filter(x =>
+      (account   === "All" || x.Account   === account) &&
+      (week      === "All" || x.Week      === week)    &&
+      (weekMonth === "All" || x.WeekMonth === weekMonth)
+    );
+    populateFilters(scoped);
     applyFilters();
   }
 
   /* ---------- APPLY FILTERS ---------- */
   function applyFilters() {
-    const code    = document.getElementById("codeFilter").value;
-    const week    = document.getElementById("weekFilter").value;
-    const account = document.getElementById("accountFilter").value;
+    const account   = document.getElementById("accountFilter").value;
+    const week      = document.getElementById("weekFilter").value;
+    const weekMonth = document.getElementById("weekMonthFilter").value;
+    const date      = document.getElementById("dateFilter").value;
+    const code      = document.getElementById("codeFilter").value;
 
     filteredData = fullData.filter(row =>
-      (account === "All" || row.Account === account) &&
-      (week    === "All" || row.Week    === week)    &&
-      (code    === "All" || row.Code    === code)
+      (account   === "All" || row.Account   === account)   &&
+      (week      === "All" || row.Week      === week)       &&
+      (weekMonth === "All" || row.WeekMonth === weekMonth)  &&
+      (date      === "All" || row.Date      === date)       &&
+      (code      === "All" || row.Code      === code)
     );
 
     currentPage = 1;
@@ -270,16 +281,11 @@
   function renderDashboard() {
     const data = filteredData;
 
-    const totalEmployees = new Set(data.map(x => x.Code)).size;
-
-    // For site/remote rate: exclude leave rows, then count per unique employee
-    // Each employee's status is determined per row — count rows not employees
-    // to reflect actual attendance days
-    const activeRows = data.filter(x => !isLeave(x.Status));
+    const activeRows  = data.filter(x => !isLeave(x.Status));
     const totalActive = activeRows.length;
 
     const siteRows   = activeRows.filter(x => x.Status === "active - site").length;
-const remoteRows = activeRows.filter(x => x.Status === "active - remote").length;
+    const remoteRows = activeRows.filter(x => x.Status === "active - remote").length;
 
     const onsiteRate = totalActive ? (siteRows   / totalActive) * 100 : 0;
     const remoteRate = totalActive ? (remoteRows / totalActive) * 100 : 0;
@@ -288,14 +294,6 @@ const remoteRows = activeRows.filter(x => x.Status === "active - remote").length
     const avg = key => metricRows.length
       ? metricRows.reduce((s, r) => s + (r[key] || 0), 0) / metricRows.length : 0;
 
-    const absentStatuses = [
-  "dropped", "ncns", "public holiday", "sick", "maternity",
-  "casual", "awol", "resigned", "annual", "upl",
-  "forced upl", "forced annual", "terminated", "marriage leave"
-];
-
-const absentRows = data.filter(x => absentStatuses.includes(x.Status));
-const absentRate = data.length ? (absentRows.length / data.length) * 100 : 0;
     document.getElementById("onsiteRate").innerText      = onsiteRate.toFixed(1) + "%";
     document.getElementById("remoteRate").innerText      = remoteRate.toFixed(1) + "%";
     document.getElementById("avgProductivity").innerText = avg("Productivity").toFixed(1) + "%";
@@ -388,9 +386,11 @@ const absentRate = data.length ? (absentRows.length / data.length) * 100 : 0;
   }
 
   /* ---------- EVENTS ---------- */
-  document.getElementById("accountFilter").addEventListener("change", onAccountChange);
-  document.getElementById("weekFilter").addEventListener("change",    onWeekChange);
-  document.getElementById("codeFilter").addEventListener("change",    applyFilters);
+  document.getElementById("accountFilter").addEventListener("change",   onAccountChange);
+  document.getElementById("weekFilter").addEventListener("change",      onWeekChange);
+  document.getElementById("weekMonthFilter").addEventListener("change", onWeekMonthChange);
+  document.getElementById("dateFilter").addEventListener("change",      applyFilters);
+  document.getElementById("codeFilter").addEventListener("change",      applyFilters);
 
   loadData();
 </script>
