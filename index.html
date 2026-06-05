@@ -146,6 +146,13 @@
 
   const isLeave = status => !status.includes("active");
 
+  // Sort weeks numerically: "Week 1" < "Week 2" < "Week 10"
+  const sortWeeks = arr => arr.sort((a, b) => {
+    const na = parseInt(a.toString().replace(/\D/g, "")) || 0;
+    const nb = parseInt(b.toString().replace(/\D/g, "")) || 0;
+    return na - nb;
+  });
+
   /* ---------- LOAD ---------- */
   async function loadData() {
     try {
@@ -222,8 +229,8 @@
 
     const uniqueAccounts   = [...new Set(fullData.map(x => x.Account))].filter(Boolean).sort();
     const uniqueMonths     = [...new Set(data.map(x => x.Month))].filter(Boolean).sort();
-    const uniqueWeeks      = [...new Set(data.map(x => x.Week))].filter(Boolean).sort();
-    const uniqueWeekMonths = [...new Set(data.map(x => x.WeekMonth))].filter(Boolean).sort();
+    const uniqueWeeks      = sortWeeks([...new Set(data.map(x => x.Week))].filter(Boolean));
+    const uniqueWeekMonths = sortWeeks([...new Set(data.map(x => x.WeekMonth))].filter(Boolean));
     const uniqueDates      = [...new Set(data.map(x => x.Date))].filter(Boolean).sort();
     const uniqueCodes      = [...new Set(data.map(x => x.Code))].filter(Boolean).sort();
 
@@ -354,7 +361,7 @@
       if (row.Status.includes("remote")) weeklyData[w].remote.add(row.Code);
     });
 
-    const labels       = Object.keys(weeklyData).sort();
+    const labels       = sortWeeks(Object.keys(weeklyData));
     const siteCounts   = labels.map(w => weeklyData[w].site.size);
     const remoteCounts = labels.map(w => weeklyData[w].remote.size);
 
@@ -387,7 +394,7 @@
       if (row.Occupancy    != null) weekMap[w].occ.push(row.Occupancy);
     });
 
-    const labels = Object.keys(weekMap).sort();
+    const labels = sortWeeks(Object.keys(weekMap));
     const avgArr = (arr) => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null;
 
     if (trendChart) trendChart.destroy();
